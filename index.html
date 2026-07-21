@@ -2,11 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NX500 — the game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>NX500 — 2.5D</title>
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #edeef0; }
-      canvas { display: block; width: 100%; height: 100%; outline: none; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #edeef0;
+        touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+      canvas { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
       #loading {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
         font: 500 14px/1 monospace; color: #17181a; letter-spacing: 0.2em; background: #edeef0; z-index: 10;
@@ -16,26 +17,37 @@
         letter-spacing: 0.08em; z-index: 5;
       }
       #time { top: 18px; left: 22px; font-size: 22px; font-weight: 600; }
-      #gates { top: 46px; left: 22px; font-size: 12px; color: #6b6d70; }
+      #dist { top: 46px; left: 22px; font-size: 12px; color: #6b6d70; }
       #speed { top: 18px; right: 22px; font-size: 22px; font-weight: 600; text-align: right; }
-      #surface { top: 46px; right: 22px; font-size: 12px; color: #6b6d70; text-align: right; }
+      #state { top: 46px; right: 22px; font-size: 12px; color: #6b6d70; text-align: right; }
       #msg {
         top: 42%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: 600;
         color: #17181a; text-align: center; display: none; white-space: pre-line; line-height: 1.7;
-        background: rgba(237, 238, 240, 0.86); padding: 22px 34px; border-radius: 14px;
+        background: rgba(237, 238, 240, 0.86); padding: 22px 34px; border-radius: 14px; z-index: 9;
       }
       #hint { bottom: 18px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #9a9da2; }
+      /* touch devices: the keyboard hint is meaningless — hide it */
+      @media (pointer: coarse) { #hint { display: none; } }
+      /* rotate-to-landscape overlay (portrait phones only) */
+      #rotate {
+        position: fixed; inset: 0; z-index: 20; display: none;
+        align-items: center; justify-content: center; text-align: center;
+        background: #edeef0; color: #17181a; font-family: monospace;
+        font-size: 15px; letter-spacing: 0.18em; line-height: 2; padding: 0 12vw;
+      }
+      @media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
     </style>
   </head>
   <body>
     <canvas id="c"></canvas>
     <div id="loading">LOADING…</div>
     <div class="hud" id="time">0:00.0</div>
-    <div class="hud" id="gates"></div>
+    <div class="hud" id="dist"></div>
     <div class="hud" id="speed">0 km/h</div>
-    <div class="hud" id="surface">tarmac</div>
+    <div class="hud" id="state">ground</div>
     <div class="hud" id="msg"></div>
-    <div class="hud" id="hint">W throttle · S brake · A/D steer · R restart</div>
-    <script type="module" src="/src/game/main.js"></script>
+    <div class="hud" id="hint">W throttle · S brake · Space jump · A/D rotate in air · R restart</div>
+    <div id="rotate">↻<br>rotate your device<br>to landscape</div>
+    <script type="module" src="/src/game25/main25.js"></script>
   </body>
 </html>

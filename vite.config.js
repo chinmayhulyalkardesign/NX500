@@ -6,10 +6,10 @@ export default defineConfig({
     // the game uses top-level await (model loading); esnext lets the production build keep it
     target: 'esnext',
     rollupOptions: {
-      // multi-page: build BOTH the 2.5D game (side.html) and the 3D prototype (index.html)
+      // index.html IS the 2.5D game (served at the site root); the old 3D prototype lives at /prototype.html
       input: {
-        side: resolve(process.cwd(), 'side.html'),
         main: resolve(process.cwd(), 'index.html'),
+        prototype: resolve(process.cwd(), 'prototype.html'),
       },
     },
   },

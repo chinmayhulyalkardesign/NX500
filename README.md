@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-Then open the printed local URL and go to **`/side.html`** for the 2.5D game.
+Then open the printed local URL — the **2.5D game is the root page**. (The earlier 3D prototype is at `/prototype.html`.)
 
 ## Controls
 
@@ -38,9 +38,9 @@ The bike rolls in from the far horizon during a 3-2-1 countdown and reaches the 
 
 ## Layout
 
-- `side.html` + `src/game25/` — the 2.5D Pass Attack game (`main25.js` = state machine, physics,
-  camera, HUD; `level.js` = data-driven level geometry, surfaces, and props)
-- `index.html` + `src/game/` — an earlier 3D expedition prototype ("First Light, Alibaug")
+- `index.html` + `src/game25/` — the 2.5D Pass Attack game, served at the root (`main25.js` = state
+  machine, physics, camera, HUD; `level.js` = data-driven level geometry, surfaces, and props)
+- `prototype.html` + `src/game/` — an earlier 3D expedition prototype ("First Light, Alibaug")
 - `public/` — runtime assets (`.glb` models)
 - `tools/` — mesh conversion / preprocessing scripts
 
