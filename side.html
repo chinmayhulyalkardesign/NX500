@@ -2,11 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>NX500 — 2.5D</title>
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #edeef0; }
-      canvas { display: block; width: 100%; height: 100%; outline: none; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #edeef0;
+        touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+      canvas { display: block; width: 100%; height: 100%; outline: none; touch-action: none; }
       #loading {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
         font: 500 14px/1 monospace; color: #17181a; letter-spacing: 0.2em; background: #edeef0; z-index: 10;
@@ -25,6 +26,16 @@
         background: rgba(237, 238, 240, 0.86); padding: 22px 34px; border-radius: 14px; z-index: 9;
       }
       #hint { bottom: 18px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #9a9da2; }
+      /* touch devices: the keyboard hint is meaningless — hide it */
+      @media (pointer: coarse) { #hint { display: none; } }
+      /* rotate-to-landscape overlay (portrait phones only) */
+      #rotate {
+        position: fixed; inset: 0; z-index: 20; display: none;
+        align-items: center; justify-content: center; text-align: center;
+        background: #edeef0; color: #17181a; font-family: monospace;
+        font-size: 15px; letter-spacing: 0.18em; line-height: 2; padding: 0 12vw;
+      }
+      @media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
     </style>
   </head>
   <body>
@@ -36,6 +47,7 @@
     <div class="hud" id="state">ground</div>
     <div class="hud" id="msg"></div>
     <div class="hud" id="hint">W throttle · S brake · Space jump · A/D rotate in air · R restart</div>
+    <div id="rotate">↻<br>rotate your device<br>to landscape</div>
     <script type="module" src="/src/game25/main25.js"></script>
   </body>
 </html>

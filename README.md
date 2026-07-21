@@ -27,6 +27,11 @@ Then open the printed local URL and go to **`/side.html`** for the 2.5D game.
 | **A / D** | rotate in the air |
 | **R** | restart |
 
+**On mobile / touch devices** the game auto-switches to on-screen controls (rotate to landscape): a red
+**GAS** button and **BRK** on the right, **JUMP** + lean **◀ ▶** on the left, and a **⟳** restart. It also
+drops to a lighter render tier (reduced resolution, no SSAO, smaller shadows) to hold framerate. Append
+`?touch=1` to the URL to force the touch layer on any device.
+
 The bike rolls in from the far horizon during a 3-2-1 countdown and reaches the start line exactly at
 **GO**; after GO it creeps forward with a pulsating **W** prompt until you throttle. Each level is a
 **Time Attack** — beat the clock, grab checkpoint time bonuses, and clear the water gaps.

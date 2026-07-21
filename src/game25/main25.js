@@ -17,8 +17,14 @@ const WASHOUT = 26;            // m/s (~94 km/h): only a reckless, jump-speed en
                               // normal fords are a drag/momentum challenge, not a speed gate
 
 // ---------- engine / scene ----------
+// MOBILE = touch-first device → gets on-screen controls and a lighter render tier.
+// Desktop is untouched (full shadows + SSAO + native resolution).
+const MOBILE = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window
+  || new URLSearchParams(location.search).has('touch');   // ?touch=1 forces the touch layer (testing / manual preference)
 const canvas = document.getElementById('c');
 const engine = new Engine(canvas, true);
+// cap effective resolution on phones (high-DPI screens are the biggest GPU cost)
+if (MOBILE) engine.setHardwareScalingLevel(Math.max(1, (window.devicePixelRatio || 1) / 1.4));
 const scene = new Scene(engine);
 scene.useRightHandedSystem = true;
 scene.clearColor = Color4.FromColor3(WORLD_BG, 1);
@@ -35,9 +41,9 @@ new HemisphericLight('hemi', new Vector3(0, 1, 0), scene).intensity = 0.75;
 const sun = new DirectionalLight('sun', new Vector3(-18, -40, -26).normalize(), scene);
 sun.position = new Vector3(18, 40, 26);
 sun.intensity = 1.35;
-const shadows = new ShadowGenerator(2048, sun);
+const shadows = new ShadowGenerator(MOBILE ? 1024 : 2048, sun);
 shadows.usePercentageCloserFiltering = true;
-shadows.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
+shadows.filteringQuality = MOBILE ? ShadowGenerator.QUALITY_LOW : ShadowGenerator.QUALITY_MEDIUM;
 shadows.bias = 0.0008;
 shadows.normalBias = 0.03;
 shadows.darkness = 0.28;
@@ -62,9 +68,12 @@ sun.shadowMaxZ = 70;
 const L = buildLevel(scene, shadows, LEG_CREEKS);
 const { profile, slopeAt, surfaceAt, waterAt, startX, finishX, spin } = L;
 
-new SSAO2RenderingPipeline('ssao', scene, { ssaoRatio: 0.75, blurRatio: 1 }, [camera]);
-const pipeline = new DefaultRenderingPipeline('default', false, scene, [camera]);
-pipeline.fxaaEnabled = true;
+// SSAO + FXAA are desktop-only — on phones they cost too much for too little at this palette
+if (!MOBILE) {
+  new SSAO2RenderingPipeline('ssao', scene, { ssaoRatio: 0.75, blurRatio: 1 }, [camera]);
+  const pipeline = new DefaultRenderingPipeline('default', false, scene, [camera]);
+  pipeline.fxaaEnabled = true;
+}
 
 // ---------- bike model ----------
 const bikeMats = {
@@ -99,7 +108,7 @@ function dotTex(name) {
   c.fillStyle = g; c.fillRect(0, 0, 64, 64); t.update();
   return t;
 }
-const dust = new ParticleSystem('dust', 400, scene);
+const dust = new ParticleSystem('dust', MOBILE ? 220 : 400, scene);
 dust.particleTexture = dotTex('dustTex');
 dust.emitter = new Vector3(startX, 0, 0);
 dust.minEmitBox = new Vector3(-0.12, 0, -0.12); dust.maxEmitBox = new Vector3(0.12, 0.08, 0.12);
@@ -112,7 +121,7 @@ dust.direction1 = new Vector3(-2.0, 0.5, -0.3); dust.direction2 = new Vector3(-0
 dust.minEmitPower = 0.5; dust.maxEmitPower = 1.6; dust.updateSpeed = 0.02;
 dust.start();
 
-const splash = new ParticleSystem('splash', 600, scene);
+const splash = new ParticleSystem('splash', MOBILE ? 320 : 600, scene);
 splash.particleTexture = dotTex('splashTex');
 splash.emitter = new Vector3(startX, 0, 0);
 splash.minEmitBox = new Vector3(-0.4, 0, -0.4); splash.maxEmitBox = new Vector3(0.4, 0.1, 0.4);
@@ -346,7 +355,8 @@ function resetMission() {
   elapsed = 0; bonusEarned = 0; timeLeft = LEG_CREEKS.timeLimit; finalTime = 0;
   passed = new Set();
   hud.msg.style.display = 'none';
-  for (const el of [hud.time, hud.speed, hud.state, hud.dist, hintEl]) if (el) el.style.display = '';
+  for (const el of [hud.time, hud.speed, hud.state, hud.dist]) if (el) el.style.display = '';
+  if (hintEl) hintEl.style.display = MOBILE ? 'none' : '';   // keep the keyboard hint hidden on touch across restarts
   raceState = 'rollin'; countT = ROLLIN_T; lastCount = ''; jumpRequested = false; finishT = 0;
   bigCount.style.display = 'block'; setCount('3');
   for (const lamp of L.startLamps) lamp.material = L.lampOffMat;
@@ -582,3 +592,62 @@ window.__nx = {
   advance: (sec) => { const n = Math.round(sec / PHYS_DT); for (let i = 0; i < n; i++) frame(PHYS_DT); },
   state: () => ({ elapsed, timeLeft, bonusEarned, finished, ended, x: bike.x }),
 };
+
+// ---------- touch controls (mobile) — drive the SAME input object / flags as the keyboard ----------
+// Placed at the end so every referenced binding (hud, input, jumpRequested, resetMission, ended) exists.
+// Layout: left thumb = lean ◀ ▶ (air rotation) + JUMP; right thumb = THROTTLE (hold) + BRAKE.
+// A small ⟳ restart sits top-right. Pointer events → multi-touch (throttle + lean) works; mouse still fine.
+if (MOBILE) {
+  const style = document.createElement('style');
+  style.textContent = `
+    #touch { position:fixed; inset:0; z-index:7; pointer-events:none;
+      font-family:monospace; touch-action:none; user-select:none; -webkit-user-select:none; }
+    #touch .btn { position:absolute; pointer-events:auto; touch-action:none;
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      border-radius:50%; border:2px solid rgba(23,24,26,0.5); background:rgba(237,238,240,0.32);
+      color:#17181a; font-weight:700; letter-spacing:0.06em; backdrop-filter:blur(2px);
+      transition:transform 0.06s, background 0.06s; }
+    #touch .btn.pressed { transform:scale(0.92); background:rgba(23,24,26,0.22); }
+    #touch .lg { width:19vmin; height:19vmin; font-size:4.4vmin; }
+    #touch .md { width:14vmin; height:14vmin; font-size:3.4vmin; }
+    #touch .sm { width:11vmin; height:11vmin; font-size:3vmin; }
+    #touch .go  { border-color:#ff2e2e; color:#ff2e2e; }   /* throttle = the hero call-to-action */
+    #touch #tThrottle { right:calc(env(safe-area-inset-right,0px) + 4vmin); bottom:9vmin; }
+    #touch #tBrake    { right:calc(env(safe-area-inset-right,0px) + 25vmin); bottom:5vmin; }
+    #touch #tJump     { left:calc(env(safe-area-inset-left,0px) + 4vmin);  bottom:9vmin; }
+    #touch #tLeft     { left:calc(env(safe-area-inset-left,0px) + 24vmin); bottom:16vmin; }
+    #touch #tRight    { left:calc(env(safe-area-inset-left,0px) + 24vmin); bottom:3vmin; }
+    #touch #tRestart  { bottom:calc(env(safe-area-inset-bottom,0px) + 3vmin); left:calc(50% - 4.5vmin);
+      width:9vmin; height:9vmin; font-size:4vmin; }`;
+  document.head.appendChild(style);
+
+  const pad = document.createElement('div');
+  pad.id = 'touch';
+  pad.innerHTML =
+    `<div class="btn lg go" id="tThrottle">W<br>GAS</div>
+     <div class="btn md" id="tBrake">BRK</div>
+     <div class="btn lg" id="tJump">JUMP</div>
+     <div class="btn md" id="tLeft">◀</div>
+     <div class="btn md" id="tRight">▶</div>
+     <div class="btn sm" id="tRestart">⟳</div>`;
+  document.body.appendChild(pad);
+
+  const hold = (id, on, off) => {
+    const el = pad.querySelector(id);
+    const down = (e) => { e.preventDefault(); el.setPointerCapture?.(e.pointerId); el.classList.add('pressed'); on(); };
+    const up = (e) => { e.preventDefault(); el.classList.remove('pressed'); off(); };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  };
+  hold('#tThrottle', () => { input.throttle = true; }, () => { input.throttle = false; });
+  hold('#tBrake', () => { input.brake = true; }, () => { input.brake = false; });
+  hold('#tLeft', () => { input.left = true; }, () => { input.left = false; });
+  hold('#tRight', () => { input.right = true; }, () => { input.right = false; });
+  hold('#tJump', () => { jumpRequested = true; }, () => {});
+  pad.querySelector('#tRestart').addEventListener('pointerdown', (e) => { e.preventDefault(); resetMission(); });
+  // tapping the results card also restarts on touch; hide the keyboard hint too
+  hud.msg.style.pointerEvents = 'auto';
+  hud.msg.addEventListener('pointerdown', (e) => { if (ended) { e.preventDefault(); resetMission(); } });
+  if (hintEl) hintEl.style.display = 'none';
+}
