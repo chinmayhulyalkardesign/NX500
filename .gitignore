@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# local Claude Code settings (per-machine)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+
+# large raw source mesh — not used at runtime (the game loads the .glb files).
+# Remove this line if you want the source .obj tracked in the repo.
+public/nx500.obj

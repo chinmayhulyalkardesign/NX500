@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NX500 — 2.5D</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #edeef0; }
+      canvas { display: block; width: 100%; height: 100%; outline: none; }
+      #loading {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        font: 500 14px/1 monospace; color: #17181a; letter-spacing: 0.2em; background: #edeef0; z-index: 10;
+      }
+      .hud {
+        position: fixed; font-family: monospace; color: #17181a; user-select: none;
+        letter-spacing: 0.08em; z-index: 5;
+      }
+      #time { top: 18px; left: 22px; font-size: 22px; font-weight: 600; }
+      #dist { top: 46px; left: 22px; font-size: 12px; color: #6b6d70; }
+      #speed { top: 18px; right: 22px; font-size: 22px; font-weight: 600; text-align: right; }
+      #state { top: 46px; right: 22px; font-size: 12px; color: #6b6d70; text-align: right; }
+      #msg {
+        top: 42%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: 600;
+        color: #17181a; text-align: center; display: none; white-space: pre-line; line-height: 1.7;
+        background: rgba(237, 238, 240, 0.86); padding: 22px 34px; border-radius: 14px; z-index: 9;
+      }
+      #hint { bottom: 18px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #9a9da2; }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <div id="loading">LOADING…</div>
+    <div class="hud" id="time">0:00.0</div>
+    <div class="hud" id="dist"></div>
+    <div class="hud" id="speed">0 km/h</div>
+    <div class="hud" id="state">ground</div>
+    <div class="hud" id="msg"></div>
+    <div class="hud" id="hint">W throttle · S brake · Space jump · A/D rotate in air · R restart</div>
+    <script type="module" src="/src/game25/main25.js"></script>
+  </body>
+</html>

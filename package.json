@@ -1,0 +1,18 @@
+{
+  "name": "nx500",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^9.17.0",
+    "@babylonjs/loaders": "^9.17.0",
+    "playcanvas": "^2.20.6",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
