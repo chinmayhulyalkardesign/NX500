@@ -595,41 +595,35 @@ window.__nx = {
 
 // ---------- touch controls (mobile) — drive the SAME input object / flags as the keyboard ----------
 // Placed at the end so every referenced binding (hud, input, jumpRequested, resetMission, ended) exists.
-// Layout: left thumb = lean ◀ ▶ (air rotation) + JUMP; right thumb = THROTTLE (hold) + BRAKE.
-// A small ⟳ restart sits top-right. Pointer events → multi-touch (throttle + lean) works; mouse still fine.
+// Minimal layout: JUMP (left) · THROTTLE/GAS (right) · ⟳ restart (bottom-center).
+// Pointer events → multi-touch (gas + jump) works; mouse still fine on hybrid devices.
 if (MOBILE) {
   const style = document.createElement('style');
   style.textContent = `
     #touch { position:fixed; inset:0; z-index:7; pointer-events:none;
       font-family:monospace; touch-action:none; user-select:none; -webkit-user-select:none; }
     #touch .btn { position:absolute; pointer-events:auto; touch-action:none;
-      display:flex; align-items:center; justify-content:center; text-align:center;
+      display:flex; align-items:center; justify-content:center; text-align:center; line-height:1;
       border-radius:50%; border:2px solid rgba(23,24,26,0.5); background:rgba(237,238,240,0.32);
       color:#17181a; font-weight:700; letter-spacing:0.06em; backdrop-filter:blur(2px);
       transition:transform 0.06s, background 0.06s; }
     #touch .btn.pressed { transform:scale(0.92); background:rgba(23,24,26,0.22); }
     #touch .lg { width:19vmin; height:19vmin; font-size:4.4vmin; }
-    #touch .md { width:14vmin; height:14vmin; font-size:3.4vmin; }
-    #touch .sm { width:11vmin; height:11vmin; font-size:3vmin; }
     #touch .go  { border-color:#ff2e2e; color:#ff2e2e; }   /* throttle = the hero call-to-action */
     #touch #tThrottle { right:calc(env(safe-area-inset-right,0px) + 4vmin); bottom:9vmin; }
-    #touch #tBrake    { right:calc(env(safe-area-inset-right,0px) + 25vmin); bottom:5vmin; }
     #touch #tJump     { left:calc(env(safe-area-inset-left,0px) + 4vmin);  bottom:9vmin; }
-    #touch #tLeft     { left:calc(env(safe-area-inset-left,0px) + 24vmin); bottom:16vmin; }
-    #touch #tRight    { left:calc(env(safe-area-inset-left,0px) + 24vmin); bottom:3vmin; }
     #touch #tRestart  { bottom:calc(env(safe-area-inset-bottom,0px) + 3vmin); left:calc(50% - 4.5vmin);
-      width:9vmin; height:9vmin; font-size:4vmin; }`;
+      width:9vmin; height:9vmin; font-size:5vmin; }
+    /* the ⟳ glyph carries its own top-heavy metrics — nudge it to sit dead-centre in the circle */
+    #touch #tRestart span { display:block; line-height:1; transform:translateY(-2%); }`;
   document.head.appendChild(style);
 
   const pad = document.createElement('div');
   pad.id = 'touch';
   pad.innerHTML =
     `<div class="btn lg go" id="tThrottle">W<br>GAS</div>
-     <div class="btn md" id="tBrake">BRK</div>
      <div class="btn lg" id="tJump">JUMP</div>
-     <div class="btn md" id="tLeft">◀</div>
-     <div class="btn md" id="tRight">▶</div>
-     <div class="btn sm" id="tRestart">⟳</div>`;
+     <div class="btn" id="tRestart"><span>&#8635;</span></div>`;
   document.body.appendChild(pad);
 
   const hold = (id, on, off) => {
@@ -641,9 +635,6 @@ if (MOBILE) {
     el.addEventListener('pointercancel', up);
   };
   hold('#tThrottle', () => { input.throttle = true; }, () => { input.throttle = false; });
-  hold('#tBrake', () => { input.brake = true; }, () => { input.brake = false; });
-  hold('#tLeft', () => { input.left = true; }, () => { input.left = false; });
-  hold('#tRight', () => { input.right = true; }, () => { input.right = false; });
   hold('#tJump', () => { jumpRequested = true; }, () => {});
   pad.querySelector('#tRestart').addEventListener('pointerdown', (e) => { e.preventDefault(); resetMission(); });
   // tapping the results card also restarts on touch; hide the keyboard hint too
