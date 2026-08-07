@@ -22,7 +22,7 @@ const WASHOUT = 26;            // m/s (~94 km/h): only a reckless, jump-speed en
 const MOBILE = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window
   || new URLSearchParams(location.search).has('touch');   // ?touch=1 forces the touch layer (testing / manual preference)
 const canvas = document.getElementById('c');
-const engine = new Engine(canvas, true);
+const engine = new Engine(canvas, true, { audioEngine: true });
 // cap effective resolution on phones (high-DPI screens are the biggest GPU cost)
 if (MOBILE) engine.setHardwareScalingLevel(Math.max(1, (window.devicePixelRatio || 1) / 1.4));
 const scene = new Scene(engine);
@@ -138,7 +138,15 @@ function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.
 
 // ---------- engine sound ----------
 // single looping sample, pitched and mixed by speed/throttle to read as a revving engine
-const engineSound = new Sound('engine', '/audio/engine.m4a', scene, null, { loop: true, autoplay: true, volume: 0 });
+const engineSound = new Sound('engine', '/audio/engine.mp3', scene, null, { loop: true, autoplay: true, volume: 0 });
+// browsers block audio playback until a real user gesture. Babylon's own unlock button relies
+// on a page click (this game is keyboard/touch-first) and its floating icon would clash with the
+// HUD anyway, so unlock straight off the first keypress/tap instead.
+if (Engine.audioEngine) Engine.audioEngine.useCustomUnlockedButton = true;
+const unlockAudio = () => Engine.audioEngine?.unlock();
+window.addEventListener('keydown', unlockAudio, { once: true });
+window.addEventListener('pointerdown', unlockAudio, { once: true });
+window.addEventListener('touchstart', unlockAudio, { once: true });
 function updateEngineSound(riding, v, throttle) {
   if (!engineSound.isReady()) return;
   const speedFrac = Math.min(1, v / WASHOUT);
