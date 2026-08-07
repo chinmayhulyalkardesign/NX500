@@ -3,7 +3,7 @@ import {
   HemisphericLight, DirectionalLight, ShadowGenerator,
   MeshBuilder, StandardMaterial, SceneLoader,
   SSAO2RenderingPipeline, DefaultRenderingPipeline,
-  ParticleSystem, DynamicTexture,
+  ParticleSystem, DynamicTexture, Sound,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
 import { buildLevel, LEG_CREEKS } from './level.js';
@@ -135,6 +135,17 @@ splash.direction1 = new Vector3(-1.8, 4, -0.7); splash.direction2 = new Vector3(
 splash.minEmitPower = 2.2; splash.maxEmitPower = 5.0; splash.updateSpeed = 0.02;
 splash.start();
 function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.manualEmitCount = 160; }
+
+// ---------- engine sound ----------
+// single looping sample, pitched and mixed by speed/throttle to read as a revving engine
+const engineSound = new Sound('engine', '/audio/engine.m4a', scene, null, { loop: true, autoplay: true, volume: 0 });
+function updateEngineSound(riding, v, throttle) {
+  if (!engineSound.isReady()) return;
+  const speedFrac = Math.min(1, v / WASHOUT);
+  engineSound.setPlaybackRate(0.75 + speedFrac * 1.1);
+  const vol = riding ? 0.16 + speedFrac * 0.5 + (throttle ? 0.14 : 0) : 0.08;
+  engineSound.setVolume(Math.min(1, vol), 0.15);
+}
 
 // ---------- bike physics ----------
 const bike = {
@@ -539,6 +550,7 @@ function frame(dt) {
     syncModel(rX, rY, rP, rB, rW);
   }
   for (const h of spin) h.rotation.z += dt * 0.55;
+  updateEngineSound(riding, bike.v, racing && input.throttle);
   const surf = surfaceAt(bike.x);
   const loose = surf.bump > 0.02 || surf.drag > 1 || surf.grip < 0.75 ? 1 : 0.25;
   dust.emitter.copyFromFloats(bike.x - 0.45, bike.y + 0.12, 0);
