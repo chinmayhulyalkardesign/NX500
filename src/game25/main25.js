@@ -136,28 +136,31 @@ splash.start();
 function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.manualEmitCount = 160; }
 
 // ---------- engine sound + music ----------
-// engineStart: a short one-shot "kick" played the instant the Start screen is dismissed.
 // engineLoop: the sustained engine loop that runs for the whole session (pre-throttle wait
-// through racing) until the result screen appears. bgm: independent looping music, unrelated
-// to race state, running continuously once the game begins.
-// autoplay is off for all three — playback is triggered explicitly (see the Start button
-// handler below) so the start-screen click is the one guaranteed user gesture that unlocks
-// audio, rather than racing an arbitrary early keydown/tap against the AudioContext unlocking.
-const engineStartSound = new Sound('engineStart', '/audio/engine-start.mp3', scene, null, { loop: false, autoplay: false, volume: 1 });
+// through racing) until the result screen appears. bgm: independent music covering the same
+// span, restarted alongside it in resetMission() so it tracks each attempt from the top.
+// autoplay is off for both — playback is triggered explicitly (Start screen handler, and
+// resetMission() on every subsequent restart) so the start-screen click is the one guaranteed
+// user gesture that unlocks audio, rather than racing an arbitrary early keydown/tap against
+// the AudioContext unlocking.
 const engineLoopSound = new Sound('engineLoop', '/audio/engine-loop.mp3', scene, null, { loop: true, autoplay: false, volume: 0.25 });
-const bgmSound = new Sound('bgm', '/audio/bgm.mp3', scene, null, { loop: true, autoplay: false, volume: 0.35 });
+const bgmSound = new Sound('bgm', '/audio/bgm.mp3', scene, null, { loop: false, autoplay: false, volume: 0.3 });
 if (Engine.audioEngine) Engine.audioEngine.useCustomUnlockedButton = true;
-function updateEngineSound(v, grounded, active) {
+function updateAudio(v, grounded, active) {
   // wait for playback to actually start: scheduling a volume change before then can collide
   // with Babylon's own one-time startup volume write on the same AudioParam and throw.
   // no ramp time on setVolume either: per-frame calls already provide smoothing, and a
   // scheduled ramp is what caused that collision in the first place.
-  if (!engineLoopSound.isReady() || !engineLoopSound.isPlaying) return;
-  const speedFrac = Math.min(1, v / WASHOUT);
-  engineLoopSound.setPlaybackRate(0.75 + speedFrac * 1.1);
-  let vol = 0.25;
-  if (!grounded) vol *= 0.4;   // airborne: duck the engine while the bike is off the ground
-  engineLoopSound.setVolume(active ? vol : 0);
+  if (engineLoopSound.isReady() && engineLoopSound.isPlaying) {
+    const speedFrac = Math.min(1, v / WASHOUT);
+    engineLoopSound.setPlaybackRate(0.75 + speedFrac * 1.1);
+    let vol = 0.25;
+    if (!grounded) vol *= 0.4;   // airborne: duck the engine while the bike is off the ground
+    engineLoopSound.setVolume(active ? vol : 0);
+  }
+  if (bgmSound.isReady() && bgmSound.isPlaying) {
+    bgmSound.setVolume(active ? 0.3 : 0);
+  }
 }
 
 // ---------- bike physics ----------
@@ -387,6 +390,10 @@ function resetMission() {
   throttlePrompt.style.opacity = '0'; throttlePrompt.style.animation = 'none';
   blackout.style.opacity = '0';
   showTitle(LEG_CREEKS.name, LEG_CREEKS.subtitle);
+  // (re)start the engine loop + music from the top so each attempt tracks its own timing
+  Engine.audioEngine?.unlock();
+  engineLoopSound.stop(); engineLoopSound.play();
+  bgmSound.stop(); bgmSound.play();
 }
 // initial resetMission() is deferred until after the camera/loop state is declared (see below)
 
@@ -563,7 +570,7 @@ function frame(dt) {
     syncModel(rX, rY, rP, rB, rW);
   }
   for (const h of spin) h.rotation.z += dt * 0.55;
-  updateEngineSound(bike.v, bike.grounded, raceState !== 'timeup' && !resultShown);
+  updateAudio(bike.v, bike.grounded, raceState !== 'timeup' && !resultShown);
   const surf = surfaceAt(bike.x);
   const loose = surf.bump > 0.02 || surf.drag > 1 || surf.grip < 0.75 ? 1 : 0.25;
   dust.emitter.copyFromFloats(bike.x - 0.45, bike.y + 0.12, 0);
@@ -601,19 +608,12 @@ const startLoadingEl = document.getElementById('startLoading');
 const startBtn = document.getElementById('startBtn');
 if (startLoadingEl) startLoadingEl.style.display = 'none';
 if (startBtn) startBtn.style.display = 'inline-block';
-const STARTER_MS = 1080;   // length of the engine-start.mp3 kick (00:03.92-00:05.00)
 startBtn?.addEventListener('click', () => {
   if (startScreen) startScreen.style.display = 'none';
-  Engine.audioEngine?.unlock();
-  engineStartSound.play();
-  bgmSound.play();
-  setTimeout(() => {
-    resetMission();       // now that camPos / renderX / acc are declared, arm the opening state
-    engineLoopSound.play();
-    // the physics/render loop reads mission state (checkpoints, elapsed, etc.) that only
-    // exists after resetMission() runs, so it doesn't start until here
-    engine.runRenderLoop(() => frame(Math.min(engine.getDeltaTime() / 1000, 0.05)));
-  }, STARTER_MS);
+  resetMission();       // now that camPos / renderX / acc are declared, arm the opening state (also starts engineLoop + bgm)
+  // the physics/render loop reads mission state (checkpoints, elapsed, etc.) that only
+  // exists after resetMission() runs, so it doesn't start until here
+  engine.runRenderLoop(() => frame(Math.min(engine.getDeltaTime() / 1000, 0.05)));
 }, { once: true });
 window.addEventListener('resize', () => engine.resize());
 
