@@ -137,8 +137,12 @@ splash.start();
 function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.manualEmitCount = 160; }
 
 // ---------- engine sound ----------
-// single looping sample, pitched and mixed by speed/throttle to read as a revving engine
-const engineSound = new Sound('engine', '/audio/engine.mp3', scene, null, { loop: true, autoplay: true, volume: 0 });
+// two looping samples cross-faded by `riding`: idle plays pre-throttle (rollin/stage), ride
+// takes over once the player hits W. Both loop continuously in the background at volume 0 so
+// switching between them is just a volume swap, not a stop/start (which risks the AudioParam
+// collision noted below).
+const engineIdleSound = new Sound('engineIdle', '/audio/engine-idle.mp3', scene, null, { loop: true, autoplay: true, volume: 0 });
+const engineRideSound = new Sound('engineRide', '/audio/engine-ride.mp3', scene, null, { loop: true, autoplay: true, volume: 0 });
 // browsers block audio playback until a real user gesture. Babylon's own unlock button relies
 // on a page click (this game is keyboard/touch-first) and its floating icon would clash with the
 // HUD anyway, so unlock straight off the first keypress/tap instead.
@@ -148,16 +152,21 @@ window.addEventListener('keydown', unlockAudio, { once: true });
 window.addEventListener('pointerdown', unlockAudio, { once: true });
 window.addEventListener('touchstart', unlockAudio, { once: true });
 function updateEngineSound(riding, v, throttle, grounded) {
-  // wait for playback to actually start: scheduling a ramp before then can collide with
-  // Babylon's own one-time startup volume write on the same AudioParam and throw
-  if (!engineSound.isReady() || !engineSound.isPlaying) return;
   const speedFrac = Math.min(1, v / WASHOUT);
-  engineSound.setPlaybackRate(0.75 + speedFrac * 1.1);
   let vol = riding ? 0.45 + speedFrac * 0.4 + (throttle ? 0.15 : 0) : 0.3;
   if (!grounded) vol *= 0.4;   // airborne: duck the engine while the bike is off the ground
-  // no ramp time: per-frame calls already provide smoothing, and a scheduled ramp here
-  // is what caused the AudioParam collision above
-  engineSound.setVolume(Math.min(1, vol));
+  vol = Math.min(1, vol);
+  // wait for playback to actually start: scheduling a ramp before then can collide with
+  // Babylon's own one-time startup volume write on the same AudioParam and throw.
+  // no ramp time on setVolume either: per-frame calls already provide smoothing, and a
+  // scheduled ramp is what caused that collision in the first place.
+  if (engineIdleSound.isReady() && engineIdleSound.isPlaying) {
+    engineIdleSound.setVolume(riding ? 0 : vol);
+  }
+  if (engineRideSound.isReady() && engineRideSound.isPlaying) {
+    engineRideSound.setPlaybackRate(0.75 + speedFrac * 1.1);
+    engineRideSound.setVolume(riding ? vol : 0);
+  }
 }
 
 // ---------- bike physics ----------
