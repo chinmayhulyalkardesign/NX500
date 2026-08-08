@@ -153,7 +153,7 @@ function updateEngineSound(riding, v, throttle) {
   if (!engineSound.isReady() || !engineSound.isPlaying) return;
   const speedFrac = Math.min(1, v / WASHOUT);
   engineSound.setPlaybackRate(0.75 + speedFrac * 1.1);
-  const vol = riding ? 0.16 + speedFrac * 0.5 + (throttle ? 0.14 : 0) : 0.08;
+  const vol = riding ? 0.45 + speedFrac * 0.4 + (throttle ? 0.15 : 0) : 0.3;
   // no ramp time: per-frame calls already provide smoothing, and a scheduled ramp here
   // is what caused the AudioParam collision above
   engineSound.setVolume(Math.min(1, vol));
