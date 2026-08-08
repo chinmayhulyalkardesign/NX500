@@ -141,8 +141,8 @@ function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.
 // takes over once the player hits W. Both loop continuously in the background at volume 0 so
 // switching between them is just a volume swap, not a stop/start (which risks the AudioParam
 // collision noted below).
-const engineIdleSound = new Sound('engineIdle', '/audio/engine-idle.mp3', scene, null, { loop: true, autoplay: true, volume: 0 });
-const engineRideSound = new Sound('engineRide', '/audio/engine-ride.mp3', scene, null, { loop: true, autoplay: true, volume: 0 });
+const engineIdleSound = new Sound('engineIdle', '/audio/engine-idle.mp3', scene, null, { loop: true, autoplay: true, volume: 1 });
+const engineRideSound = new Sound('engineRide', '/audio/engine-ride.mp3', scene, null, { loop: true, autoplay: true, volume: 1 });
 // browsers block audio playback until a real user gesture. Babylon's own unlock button relies
 // on a page click (this game is keyboard/touch-first) and its floating icon would clash with the
 // HUD anyway, so unlock straight off the first keypress/tap instead.
@@ -151,11 +151,9 @@ const unlockAudio = () => Engine.audioEngine?.unlock();
 window.addEventListener('keydown', unlockAudio, { once: true });
 window.addEventListener('pointerdown', unlockAudio, { once: true });
 window.addEventListener('touchstart', unlockAudio, { once: true });
-function updateEngineSound(riding, v, throttle, grounded) {
+function updateEngineSound(riding, v, grounded) {
   const speedFrac = Math.min(1, v / WASHOUT);
-  let vol = riding ? 0.45 + speedFrac * 0.4 + (throttle ? 0.15 : 0) : 0.3;
-  if (!grounded) vol *= 0.4;   // airborne: duck the engine while the bike is off the ground
-  vol = Math.min(1, vol);
+  const vol = grounded ? 1 : 0.4;   // airborne: duck the engine while the bike is off the ground
   // wait for playback to actually start: scheduling a ramp before then can collide with
   // Babylon's own one-time startup volume write on the same AudioParam and throw.
   // no ramp time on setVolume either: per-frame calls already provide smoothing, and a
@@ -572,7 +570,7 @@ function frame(dt) {
     syncModel(rX, rY, rP, rB, rW);
   }
   for (const h of spin) h.rotation.z += dt * 0.55;
-  updateEngineSound(riding, bike.v, racing && input.throttle, bike.grounded);
+  updateEngineSound(riding, bike.v, bike.grounded);
   const surf = surfaceAt(bike.x);
   const loose = surf.bump > 0.02 || surf.drag > 1 || surf.grip < 0.75 ? 1 : 0.25;
   dust.emitter.copyFromFloats(bike.x - 0.45, bike.y + 0.12, 0);
