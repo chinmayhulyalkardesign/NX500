@@ -97,7 +97,6 @@ for (const m of meshes) {
   if (/wheelR/i.test(m.name)) wheelR = m;
   if (m.name === '__root__') model = m;
 }
-document.getElementById('loading')?.remove();
 
 // ---------- particles: dust + splash ----------
 function dotTex(name) {
@@ -136,35 +135,29 @@ splash.minEmitPower = 2.2; splash.maxEmitPower = 5.0; splash.updateSpeed = 0.02;
 splash.start();
 function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.manualEmitCount = 160; }
 
-// ---------- engine sound ----------
-// two looping samples cross-faded by `riding`: idle plays pre-throttle (rollin/stage), ride
-// takes over once the player hits W. Both loop continuously in the background at volume 0 so
-// switching between them is just a volume swap, not a stop/start (which risks the AudioParam
-// collision noted below).
-const engineIdleSound = new Sound('engineIdle', '/audio/engine-idle.mp3', scene, null, { loop: true, autoplay: true, volume: 1 });
-const engineRideSound = new Sound('engineRide', '/audio/engine-ride.mp3', scene, null, { loop: true, autoplay: true, volume: 1 });
-// browsers block audio playback until a real user gesture. Babylon's own unlock button relies
-// on a page click (this game is keyboard/touch-first) and its floating icon would clash with the
-// HUD anyway, so unlock straight off the first keypress/tap instead.
+// ---------- engine sound + music ----------
+// engineStart: a short one-shot "kick" played the instant the Start screen is dismissed.
+// engineLoop: the sustained engine loop that runs for the whole session (pre-throttle wait
+// through racing) until the result screen appears. bgm: independent looping music, unrelated
+// to race state, running continuously once the game begins.
+// autoplay is off for all three — playback is triggered explicitly (see the Start button
+// handler below) so the start-screen click is the one guaranteed user gesture that unlocks
+// audio, rather than racing an arbitrary early keydown/tap against the AudioContext unlocking.
+const engineStartSound = new Sound('engineStart', '/audio/engine-start.mp3', scene, null, { loop: false, autoplay: false, volume: 1 });
+const engineLoopSound = new Sound('engineLoop', '/audio/engine-loop.mp3', scene, null, { loop: true, autoplay: false, volume: 0.25 });
+const bgmSound = new Sound('bgm', '/audio/bgm.mp3', scene, null, { loop: true, autoplay: false, volume: 0.35 });
 if (Engine.audioEngine) Engine.audioEngine.useCustomUnlockedButton = true;
-const unlockAudio = () => Engine.audioEngine?.unlock();
-window.addEventListener('keydown', unlockAudio, { once: true });
-window.addEventListener('pointerdown', unlockAudio, { once: true });
-window.addEventListener('touchstart', unlockAudio, { once: true });
-function updateEngineSound(riding, v, grounded) {
-  const speedFrac = Math.min(1, v / WASHOUT);
-  const vol = grounded ? 1 : 0.4;   // airborne: duck the engine while the bike is off the ground
-  // wait for playback to actually start: scheduling a ramp before then can collide with
-  // Babylon's own one-time startup volume write on the same AudioParam and throw.
+function updateEngineSound(v, grounded, active) {
+  // wait for playback to actually start: scheduling a volume change before then can collide
+  // with Babylon's own one-time startup volume write on the same AudioParam and throw.
   // no ramp time on setVolume either: per-frame calls already provide smoothing, and a
   // scheduled ramp is what caused that collision in the first place.
-  if (engineIdleSound.isReady() && engineIdleSound.isPlaying) {
-    engineIdleSound.setVolume(riding ? 0 : vol);
-  }
-  if (engineRideSound.isReady() && engineRideSound.isPlaying) {
-    engineRideSound.setPlaybackRate(0.75 + speedFrac * 1.1);
-    engineRideSound.setVolume(riding ? vol : 0);
-  }
+  if (!engineLoopSound.isReady() || !engineLoopSound.isPlaying) return;
+  const speedFrac = Math.min(1, v / WASHOUT);
+  engineLoopSound.setPlaybackRate(0.75 + speedFrac * 1.1);
+  let vol = 0.25;
+  if (!grounded) vol *= 0.4;   // airborne: duck the engine while the bike is off the ground
+  engineLoopSound.setVolume(active ? vol : 0);
 }
 
 // ---------- bike physics ----------
@@ -570,7 +563,7 @@ function frame(dt) {
     syncModel(rX, rY, rP, rB, rW);
   }
   for (const h of spin) h.rotation.z += dt * 0.55;
-  updateEngineSound(riding, bike.v, bike.grounded);
+  updateEngineSound(bike.v, bike.grounded, raceState !== 'timeup' && !resultShown);
   const surf = surfaceAt(bike.x);
   const loose = surf.bump > 0.02 || surf.drag > 1 || surf.grip < 0.75 ? 1 : 0.25;
   dust.emitter.copyFromFloats(bike.x - 0.45, bike.y + 0.12, 0);
@@ -601,8 +594,27 @@ function frame(dt) {
   updateCamera(dt);
   scene.render();
 }
-resetMission();   // now that camPos / renderX / acc are declared, arm the opening state
-engine.runRenderLoop(() => frame(Math.min(engine.getDeltaTime() / 1000, 0.05)));
+// gate the opening state behind the Start screen instead of auto-arming on load: reveal the
+// button now that everything above is ready, and defer resetMission() to its click handler
+const startScreen = document.getElementById('startScreen');
+const startLoadingEl = document.getElementById('startLoading');
+const startBtn = document.getElementById('startBtn');
+if (startLoadingEl) startLoadingEl.style.display = 'none';
+if (startBtn) startBtn.style.display = 'inline-block';
+const STARTER_MS = 1080;   // length of the engine-start.mp3 kick (00:03.92-00:05.00)
+startBtn?.addEventListener('click', () => {
+  if (startScreen) startScreen.style.display = 'none';
+  Engine.audioEngine?.unlock();
+  engineStartSound.play();
+  bgmSound.play();
+  setTimeout(() => {
+    resetMission();       // now that camPos / renderX / acc are declared, arm the opening state
+    engineLoopSound.play();
+    // the physics/render loop reads mission state (checkpoints, elapsed, etc.) that only
+    // exists after resetMission() runs, so it doesn't start until here
+    engine.runRenderLoop(() => frame(Math.min(engine.getDeltaTime() / 1000, 0.05)));
+  }, STARTER_MS);
+}, { once: true });
 window.addEventListener('resize', () => engine.resize());
 
 // ---------- speed lines ----------
