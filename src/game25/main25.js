@@ -6,7 +6,22 @@ import {
   ParticleSystem, DynamicTexture, Sound,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import { buildLevel, LEG_CREEKS } from './level.js';
+import { buildLevel, LEG_CREEKS, LEG_PUNE } from './level.js';
+
+// ---------- leg selection ----------
+// resolved before any Babylon object is constructed, since the whole scene is built once at
+// module load; the Start screen's leg picker just navigates to the right ?leg= URL.
+const LEGS = { [LEG_PUNE.id]: LEG_PUNE, [LEG_CREEKS.id]: LEG_CREEKS };
+const DEFAULT_LEG_ID = 'pune';   // leg 1 is the natural entry point / tutorial
+const legIdParam = new URLSearchParams(location.search).get('leg');
+const CURRENT_LEG_ID = LEGS[legIdParam] ? legIdParam : DEFAULT_LEG_ID;
+const CURRENT_LEG = LEGS[CURRENT_LEG_ID];
+document.querySelectorAll('#legPicker .legBtn').forEach((el) => {
+  const params = new URLSearchParams(location.search);
+  params.set('leg', el.dataset.leg);
+  el.href = `?${params.toString()}`;   // preserves e.g. ?touch=1 across leg switches
+  el.classList.toggle('active', el.dataset.leg === CURRENT_LEG_ID);
+});
 
 const WORLD_BG = Color3.FromHexString('#edeef0');
 const BIKE_RED = Color3.FromHexString('#e12b2b');
@@ -15,6 +30,8 @@ const G = 12;
 const WHEEL_RADIUS = 0.375;
 const WASHOUT = 26;            // m/s (~94 km/h): only a reckless, jump-speed entry washes out;
                               // normal fords are a drag/momentum challenge, not a speed gate
+const STALL_SPEED = 1.2;       // m/s: crawling this slowly mid-ford means you bogged down
+const STALL_GRACE = 0.6;       // seconds under STALL_SPEED before it counts as stalled out
 
 // ---------- engine / scene ----------
 // MOBILE = touch-first device → gets on-screen controls and a lighter render tier.
@@ -29,8 +46,8 @@ const scene = new Scene(engine);
 scene.useRightHandedSystem = true;
 scene.clearColor = Color4.FromColor3(WORLD_BG, 1);
 scene.fogMode = Scene.FOGMODE_LINEAR;
-scene.fogStart = LEG_CREEKS.fog.start;
-scene.fogEnd = LEG_CREEKS.fog.end;
+scene.fogStart = CURRENT_LEG.fog.start;
+scene.fogEnd = CURRENT_LEG.fog.end;
 scene.fogColor = WORLD_BG;
 
 const camera = new FreeCamera('cam', new Vector3(-180, 3, 10), scene);
@@ -65,7 +82,7 @@ sun.shadowMaxZ = 70;
 }
 
 // ---------- build the leg ----------
-const L = buildLevel(scene, shadows, LEG_CREEKS);
+const L = buildLevel(scene, shadows, CURRENT_LEG);
 const { profile, slopeAt, surfaceAt, waterAt, startX, finishX, spin } = L;
 
 // SSAO + FXAA are desktop-only — on phones they cost too much for too little at this palette
@@ -166,10 +183,10 @@ function updateAudio(v, grounded, active) {
 // ---------- bike physics ----------
 const bike = {
   x: startX, y: profile(startX), v: 0, vx: 0, vy: 0,
-  grounded: true, pitch: 0, wheelAngle: 0, bump: 0, inFord: false,
+  grounded: true, pitch: 0, wheelAngle: 0, bump: 0, inFord: false, fordStallT: 0,
   reset() {
     this.x = startX; this.y = profile(startX); this.v = 0; this.vx = 0; this.vy = 0;
-    this.grounded = true; this.pitch = slopeAt(startX); this.bump = 0; this.inFord = false;
+    this.grounded = true; this.pitch = slopeAt(startX); this.bump = 0; this.inFord = false; this.fordStallT = 0;
   },
 };
 bike.reset();
@@ -178,7 +195,7 @@ let lastCP = startX;
 function respawn(reason) {
   doSplash(bike.x, bike.y);
   bike.x = lastCP; bike.y = profile(lastCP); bike.v = 0; bike.vx = 0; bike.vy = 0;
-  bike.grounded = true; bike.pitch = slopeAt(lastCP); bike.bump = 0; bike.inFord = false;
+  bike.grounded = true; bike.pitch = slopeAt(lastCP); bike.bump = 0; bike.inFord = false; bike.fordStallT = 0;
   showFlash(reason, 1100, '#ff2e2e');
 }
 
@@ -223,8 +240,11 @@ function stepBike(dt, input) {
     bike.bump += (bt - bike.bump) * Math.min(1, dt * 12);
 
     if (wz && wz.type === 'ford') {
-      if (!bike.inFord) { bike.inFord = true; doSplash(bike.x, wz.waterY); if (bike.v > WASHOUT) { respawn('WASHED OUT'); return; } }
-    } else bike.inFord = false;
+      if (!bike.inFord) { bike.inFord = true; bike.fordStallT = 0; doSplash(bike.x, wz.waterY); if (bike.v > WASHOUT) { respawn('WASHED OUT'); return; } }
+      // too little momentum and the ford's drag bogs you down before you reach the far bank
+      if (bike.v < STALL_SPEED) { bike.fordStallT += dt; if (bike.fordStallT > STALL_GRACE) { respawn('STALLED OUT'); return; } }
+      else bike.fordStallT = 0;
+    } else { bike.inFord = false; bike.fordStallT = 0; }
     if (wz && wz.type === 'gap' && bike.y < wz.waterY) { respawn('DROWNED'); return; }
   } else {
     const rot = (input.left ? 1 : 0) - (input.right ? 1 : 0);
@@ -366,8 +386,8 @@ blackout.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;z-ind
 document.body.appendChild(blackout);
 
 // ---------- Time Attack mission ----------
-const MEDAL = { gold: 22, silver: 24 };   // finish elapsed seconds (clock budget ≈ 26s, so finishing at all is tight)
-const BEST_KEY = 'nx_creeks_best';
+const MEDAL = CURRENT_LEG.medal;   // finish elapsed seconds
+const BEST_KEY = `nx_${CURRENT_LEG.id}_best`;
 let started, finished, ended, elapsed, bonusEarned, timeLeft, finalTime, passed, resultShown;
 let raceState, finishT, countT;
 function resetMission() {
@@ -379,7 +399,7 @@ function resetMission() {
   camFocusY = profile(bike.x); camRoll = 0;
   camPos.copyFromFloats(bike.x - 0.5, camFocusY + 6, 20);
   started = false; finished = false; ended = false; resultShown = false;
-  elapsed = 0; bonusEarned = 0; timeLeft = LEG_CREEKS.timeLimit; finalTime = 0;
+  elapsed = 0; bonusEarned = 0; timeLeft = CURRENT_LEG.timeLimit; finalTime = 0;
   passed = new Set();
   hud.msg.style.display = 'none';
   for (const el of [hud.time, hud.speed, hud.state, hud.dist]) if (el) el.style.display = '';
@@ -389,7 +409,7 @@ function resetMission() {
   for (const lamp of L.startLamps) lamp.material = L.lampOffMat;
   throttlePrompt.style.opacity = '0'; throttlePrompt.style.animation = 'none';
   blackout.style.opacity = '0';
-  showTitle(LEG_CREEKS.name, LEG_CREEKS.subtitle);
+  showTitle(CURRENT_LEG.name, CURRENT_LEG.subtitle);
   // (re)start the engine loop + music from the top so each attempt tracks its own timing
   Engine.audioEngine?.unlock();
   engineLoopSound.stop(); engineLoopSound.play();
@@ -417,7 +437,7 @@ function updateMission(dt) {
       for (const lamp of L.startLamps) lamp.material = L.lampOffMat;
       setTimeout(() => { bigCount.style.display = 'none'; }, 550);
     }
-    hud.time.textContent = fmt(LEG_CREEKS.timeLimit);
+    hud.time.textContent = fmt(CURRENT_LEG.timeLimit);
     hud.time.style.color = '#17181a';
     hud.dist.textContent = 'get ready';
     hud.speed.textContent = `${Math.round(bike.v * 3.6)} km/h`;
@@ -433,7 +453,7 @@ function updateMission(dt) {
     for (const c of L.checkpoints) {
       if (!passed.has(c.x) && bike.x >= c.x) { passed.add(c.x); lastCP = c.x; bonusEarned += c.bonus; showFlash(`CHECKPOINT  +${c.bonus}s`, 1200, '#17181a'); }
     }
-    timeLeft = LEG_CREEKS.timeLimit + bonusEarned - elapsed;
+    timeLeft = CURRENT_LEG.timeLimit + bonusEarned - elapsed;
     if (bike.x >= finishX) {
       ended = true; finished = true; finalTime = elapsed; raceState = 'finish'; finishT = 0;
       const prev = parseFloat(localStorage.getItem(BEST_KEY) || 'Infinity');
