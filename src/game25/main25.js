@@ -147,13 +147,14 @@ const unlockAudio = () => Engine.audioEngine?.unlock();
 window.addEventListener('keydown', unlockAudio, { once: true });
 window.addEventListener('pointerdown', unlockAudio, { once: true });
 window.addEventListener('touchstart', unlockAudio, { once: true });
-function updateEngineSound(riding, v, throttle) {
+function updateEngineSound(riding, v, throttle, grounded) {
   // wait for playback to actually start: scheduling a ramp before then can collide with
   // Babylon's own one-time startup volume write on the same AudioParam and throw
   if (!engineSound.isReady() || !engineSound.isPlaying) return;
   const speedFrac = Math.min(1, v / WASHOUT);
   engineSound.setPlaybackRate(0.75 + speedFrac * 1.1);
-  const vol = riding ? 0.45 + speedFrac * 0.4 + (throttle ? 0.15 : 0) : 0.3;
+  let vol = riding ? 0.45 + speedFrac * 0.4 + (throttle ? 0.15 : 0) : 0.3;
+  if (!grounded) vol *= 0.4;   // airborne: duck the engine while the bike is off the ground
   // no ramp time: per-frame calls already provide smoothing, and a scheduled ramp here
   // is what caused the AudioParam collision above
   engineSound.setVolume(Math.min(1, vol));
@@ -562,7 +563,7 @@ function frame(dt) {
     syncModel(rX, rY, rP, rB, rW);
   }
   for (const h of spin) h.rotation.z += dt * 0.55;
-  updateEngineSound(riding, bike.v, racing && input.throttle);
+  updateEngineSound(riding, bike.v, racing && input.throttle, bike.grounded);
   const surf = surfaceAt(bike.x);
   const loose = surf.bump > 0.02 || surf.drag > 1 || surf.grip < 0.75 ? 1 : 0.25;
   dust.emitter.copyFromFloats(bike.x - 0.45, bike.y + 0.12, 0);
