@@ -148,11 +148,15 @@ window.addEventListener('keydown', unlockAudio, { once: true });
 window.addEventListener('pointerdown', unlockAudio, { once: true });
 window.addEventListener('touchstart', unlockAudio, { once: true });
 function updateEngineSound(riding, v, throttle) {
-  if (!engineSound.isReady()) return;
+  // wait for playback to actually start: scheduling a ramp before then can collide with
+  // Babylon's own one-time startup volume write on the same AudioParam and throw
+  if (!engineSound.isReady() || !engineSound.isPlaying) return;
   const speedFrac = Math.min(1, v / WASHOUT);
   engineSound.setPlaybackRate(0.75 + speedFrac * 1.1);
   const vol = riding ? 0.16 + speedFrac * 0.5 + (throttle ? 0.14 : 0) : 0.08;
-  engineSound.setVolume(Math.min(1, vol), 0.15);
+  // no ramp time: per-frame calls already provide smoothing, and a scheduled ramp here
+  // is what caused the AudioParam collision above
+  engineSound.setVolume(Math.min(1, vol));
 }
 
 // ---------- bike physics ----------
