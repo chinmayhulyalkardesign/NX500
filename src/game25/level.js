@@ -4,8 +4,9 @@ import {
 } from '@babylonjs/core';
 
 // ---------- Superhot monochrome palette (no hue; red only for hero/hazard/goal) ----------
-// per-leg palettes shift these toward the biome's cast (cool ghat green-grey, warm laterite,
-// golden coastal dusk, ...) while staying inside the pale/desaturated Superhot range.
+// per-leg palettes vary only in value and a hairline warm/cool bias (a few RGB points, same
+// spread as the defaults below) — never real hue/saturation. Legs read as distinct through
+// lighting, fog, geometry and props, not color; red stays exclusive to hero/hazard/checkpoint/goal.
 const DEFAULT_PALETTE = {
   ground: '#d5d8db', water: '#b7bcc2', rock: '#cfd2d6',
   hill: ['#c3c8ce', '#d3d7db', '#e1e4e6'],
@@ -81,10 +82,12 @@ export const LEG_PUNE = {
   timeLimit: 32,          // generous vs. Creeks' 17s — this is the learn-the-controls leg
   medal: { gold: 15, silver: 19 },
   fog: { start: 110, end: 380 },   // dry, open plateau — long sightlines, not misty
+  // same near-zero saturation as the default (Creeks) palette — a hairline warm bias and a
+  // brighter value curve read as "dry, sun-bleached plateau" without introducing real color
   palette: {
-    ground: '#ded2b8', rock: '#c9b896',
-    hill: ['#cbb999', '#d9c7a4', '#e6d9bd'],
-    tree: '#a9a06f', pole: '#c9c0ad', fg: '#b8ab8a', wood: '#b79a6c',
+    ground: '#dbd8d0', rock: '#d2cfc7',
+    hill: ['#c6c3ba', '#d4d1c8', '#e2dfd5'],
+    tree: '#bdbab1', pole: '#c7c4bb', fg: '#b4b1a8', wood: '#b9b6ac',
   },
   props: { palms: false, boats: false, grove: 0.3 },   // sparse, no coastal props
   segments: [
