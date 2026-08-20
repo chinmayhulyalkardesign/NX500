@@ -98,12 +98,12 @@ export const LEG_PUNE = {
     { type: 'climb', len: 20, surface: 'tarmac', rise: 2.6 },
     { type: 'descent', len: 18, surface: 'tarmac', drop: 2.6 },  // smooth grade, no launch — momentum feel
     { type: 'flat', len: 20, surface: 'gravel' },
-    { type: 'checkpoint', bonus: 5 },
     { type: 'climb', len: 14, surface: 'tarmac', rise: 3.4 },    // short, steep — builds speed fast on full-grip tarmac
     { type: 'descent', len: 10, surface: 'gravel', drop: 3.6 },  // the crest: launches, lands on gravel
-    { type: 'flat', len: 18, surface: 'gravel' },          // recovery straight after the landing — checkpoint moved
-    { type: 'checkpoint', bonus: 5 },                      // past here so it's not gated mid-air over the crest
+    { type: 'flat', len: 18, surface: 'gravel' },          // recovery straight after the landing
     { type: 'rollers', len: 20, surface: 'gravel', amp: 0.6 },
+    { type: 'checkpoint', bonus: 5 },                      // moved well clear of the crest's landing spread —
+                                                            // 18m recovery + a full rollers section past the launch
     { type: 'climb', len: 12, surface: 'gravel', rise: 1.6 },     // second technical moment: a loose-surface climb —
     { type: 'descent', len: 10, surface: 'gravel', drop: 1.6 },   // too much throttle here spins the rear wheel, not launches it
     { type: 'flat', len: 30, surface: 'tarmac' },          // sprint to the line
