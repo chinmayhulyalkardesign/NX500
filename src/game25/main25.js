@@ -6,12 +6,12 @@ import {
   ParticleSystem, DynamicTexture, Sound,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import { buildLevel, LEG_CREEKS, LEG_PUNE } from './level.js';
+import { buildLevel, LEG_CREEKS, LEG_PUNE, LEG_GHATS } from './level.js';
 
 // ---------- leg selection ----------
 // resolved before any Babylon object is constructed, since the whole scene is built once at
 // module load; the Start screen's leg picker just navigates to the right ?leg= URL.
-const LEGS = { [LEG_PUNE.id]: LEG_PUNE, [LEG_CREEKS.id]: LEG_CREEKS };
+const LEGS = { [LEG_PUNE.id]: LEG_PUNE, [LEG_GHATS.id]: LEG_GHATS, [LEG_CREEKS.id]: LEG_CREEKS };
 const DEFAULT_LEG_ID = 'pune';   // leg 1 is the natural entry point / tutorial
 const legIdParam = new URLSearchParams(location.search).get('leg');
 const CURRENT_LEG_ID = LEGS[legIdParam] ? legIdParam : DEFAULT_LEG_ID;
@@ -83,7 +83,7 @@ sun.shadowMaxZ = 70;
 
 // ---------- build the leg ----------
 const L = buildLevel(scene, shadows, CURRENT_LEG);
-const { profile, slopeAt, surfaceAt, waterAt, startX, finishX, spin } = L;
+const { profile, slopeAt, surfaceAt, waterAt, startX, finishX, spin, waterfallTexture } = L;
 
 // SSAO + FXAA are desktop-only — on phones they cost too much for too little at this palette
 if (!MOBILE) {
@@ -590,6 +590,7 @@ function frame(dt) {
     syncModel(rX, rY, rP, rB, rW);
   }
   for (const h of spin) h.rotation.z += dt * 0.55;
+  if (waterfallTexture) waterfallTexture.vOffset = (waterfallTexture.vOffset + dt * 1.4) % 1;
   updateAudio(bike.v, bike.grounded, raceState !== 'timeup' && !resultShown);
   const surf = surfaceAt(bike.x);
   const loose = surf.bump > 0.02 || surf.drag > 1 || surf.grip < 0.75 ? 1 : 0.25;

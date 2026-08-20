@@ -1,6 +1,6 @@
 import {
   Color3, Vector3, MeshBuilder, StandardMaterial, VertexBuffer, TransformNode,
-  Matrix, Quaternion,
+  Matrix, Quaternion, DynamicTexture, Texture,
 } from '@babylonjs/core';
 
 // ---------- Superhot monochrome palette (no hue; red only for hero/hazard/goal) ----------
@@ -111,6 +111,41 @@ export const LEG_PUNE = {
   ],
 };
 
+// ---------- into the Ghats (Tamhini) ----------
+export const LEG_GHATS = {
+  id: 'ghats',
+  name: 'INTO THE GHATS',
+  subtitle: 'TAMHINI · TIME ATTACK',
+  timeLimit: 26,
+  medal: { gold: 30, silver: 36 },
+  fog: { start: 42, end: 165 },    // dense, close mist — the whole point of the leg
+  // same near-zero saturation as every other leg (no real hue, ever) — a deeper, cooler bias
+  // and lower value than Creeks/Pune reads as "shaded, damp, closed-in forest" through
+  // brightness alone, same spread (~10-14 RGB points) as the rest of the palette family
+  palette: {
+    ground: '#c8cdd4', rock: '#c3c8d0',
+    hill: ['#b8bdc6', '#c6cbd2', '#d4d9de'],
+    tree: '#a8adb5', pole: '#bcc1c8', fg: '#a5aab2', wood: '#b0b5bb',
+  },
+  props: { palms: false, boats: false, turbines: false, poles: false, grove: 1.7, rocks: true, foreground: true, waterfalls: true },
+  segments: [
+    { type: 'flat', len: 22, surface: 'tarmac' },          // start pad
+    { type: 'rollers', len: 20, surface: 'gravel', amp: 0.4 },   // kept under the natural-launch threshold even at speed —
+    { type: 'checkpoint', bonus: 6 },                            // a checkpoint sits right after it, must stay grounded
+    { type: 'climb', len: 46, surface: 'wet_tarmac', rise: 7.5 },   // the long grade — carry momentum or wheelspin stalls you
+    { type: 'flat', len: 14, surface: 'wet_tarmac' },        // a brief false summit — no descent yet, keep climbing pressure on
+    { type: 'checkpoint', bonus: 6 },
+    { type: 'climb', len: 20, surface: 'wet_tarmac', rise: 3.0 },   // second, shorter pitch — compounds on an already-tired line
+    { type: 'descent', len: 22, surface: 'gravel', drop: 3.2 },     // gentle way down off the ridge — no launch, just a breather
+    { type: 'rollers', len: 18, surface: 'gravel', amp: 0.4 },
+    { type: 'flat', len: 16, surface: 'gravel' },       // absorbs the rollers' end-of-segment height discontinuity
+    { type: 'checkpoint', bonus: 6 },                    // before the checkpoint gate, same fix class as the Pune bug
+    { type: 'climb', len: 24, surface: 'wet_tarmac', rise: 4.2 },   // final pitch — wet grip when you're already gassed
+    { type: 'flat', len: 26, surface: 'tarmac' },            // the road dries out — sprint to the line
+    { type: 'finish' },
+  ],
+};
+
 const DX = 0.5;
 function smooth(t) { return t * t * (3 - 2 * t); }
 
@@ -194,7 +229,7 @@ export function buildLevel(scene, shadows, leg) {
   const C = resolvePalette(leg.palette);
   // per-biome decoration toggles; grove is a density multiplier, the rest are on/off.
   // defaults match the original coastal set so a leg with no `props` looks unchanged.
-  const props = { palms: true, boats: true, turbines: true, poles: true, grove: 1, rocks: true, foreground: true, ...leg.props };
+  const props = { palms: true, boats: true, turbines: true, poles: true, grove: 1, rocks: true, foreground: true, waterfalls: false, ...leg.props };
 
   // ---------- ribbon (surfaced, value-shaded) ----------
   const spanX = finishX - startX + 400;   // generous aprons (200m each side): ground runs well past the finish for the outro ride-off
@@ -541,8 +576,53 @@ export function buildLevel(scene, shadows, leg) {
     }
   }
 
+  // ---------- waterfalls: a rock-cliff cluster + an animated falling-water sheet, scattered
+  // off to one side of the track. One shared scrolling texture (its vOffset is animated by the
+  // caller each frame) drives every sheet, so the falls all read as continuously flowing.
+  let waterfallTexture = null;
+  if (props.waterfalls) {
+    const cliffMat = flat('cliffMat', C.ROCK.scale(0.82));
+    const fallTex = new DynamicTexture('fallTex', { width: 32, height: 128 }, scene, false);
+    const ftc = fallTex.getContext();
+    for (let y = 0; y < 128; y += 4) {
+      ftc.fillStyle = (Math.floor(y / 4) % 2 === 0) ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)';
+      ftc.fillRect(0, y, 32, 4);
+    }
+    fallTex.update();
+    fallTex.wrapV = Texture.WRAP_ADDRESSMODE;
+    const fallMat = flat('fallMat', C.WATER);
+    fallMat.diffuseTexture = fallTex;
+    fallMat.emissiveColor = C.WATER.scale(0.3);
+    fallMat.backFaceCulling = false;
+    waterfallTexture = fallTex;
+    const waterfallCount = 3;
+    for (let i = 0; i < waterfallCount; i++) {
+      const wx = startX + 50 + rng() * Math.max(1, finishX - startX - 100);
+      const side = rng() < 0.5 ? -1 : 1;
+      const wz = side * (13 + rng() * 8);
+      const h = 9 + rng() * 6;
+      const gy = profile(wx);
+      for (let k = 0; k < 5; k++) {
+        const cs = 2.6 + rng() * 3;
+        const cliff = MeshBuilder.CreatePolyhedron('cliff', { type: 3, size: cs }, scene);
+        cliff.position.set(wx + (rng() - 0.5) * 11, gy + h * 0.4 + (rng() - 0.5) * 4, wz + (rng() - 0.5) * 5);
+        cliff.rotation.set(rng() * 3, rng() * 3, rng() * 3);
+        cliff.material = cliffMat;
+        shadows.addShadowCaster(cliff);
+      }
+      const sheet = MeshBuilder.CreatePlane('fall', { width: 1.5 + rng() * 0.7, height: h }, scene);
+      sheet.position.set(wx, gy + h / 2, wz);
+      sheet.rotation.y = Math.PI / 2;
+      sheet.material = fallMat;
+      const pool = MeshBuilder.CreateDisc('pool', { radius: 1.5 + rng(), tessellation: 8 }, scene);
+      pool.rotation.x = Math.PI / 2;
+      pool.position.set(wx, gy + 0.05, wz);
+      pool.material = flat('poolMat' + i, C.WATER);
+    }
+  }
+
   return {
-    ...L, spin, checkMarkers, startLamps, lampOnMat, lampOffMat,
+    ...L, spin, checkMarkers, startLamps, lampOnMat, lampOffMat, waterfallTexture,
     name: leg.name, subtitle: leg.subtitle, timeLimit: leg.timeLimit, fog: leg.fog,
   };
 }
