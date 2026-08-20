@@ -4,16 +4,30 @@ import {
 } from '@babylonjs/core';
 
 // ---------- Superhot monochrome palette (no hue; red only for hero/hazard/goal) ----------
-const GROUND = Color3.FromHexString('#d5d8db');
-const WATER = Color3.FromHexString('#b7bcc2');
-const ROCK = Color3.FromHexString('#cfd2d6');
-const HILL = [Color3.FromHexString('#c3c8ce'), Color3.FromHexString('#d3d7db'), Color3.FromHexString('#e1e4e6')];
-const TREE = Color3.FromHexString('#c3c8cd');
-const POLE = Color3.FromHexString('#c8ccd1');
-const FG = Color3.FromHexString('#b7bcc3');
-const WOOD = Color3.FromHexString('#bdbfc2');
-const BLACK = Color3.FromHexString('#17181a');
-const RED = Color3.FromHexString('#ff2e2e');
+// per-leg palettes vary only in value and a hairline warm/cool bias (a few RGB points, same
+// spread as the defaults below) — never real hue/saturation. Legs read as distinct through
+// lighting, fog, geometry and props, not color; red stays exclusive to hero/hazard/checkpoint/goal.
+const DEFAULT_PALETTE = {
+  ground: '#d5d8db', water: '#b7bcc2', rock: '#cfd2d6',
+  hill: ['#c3c8ce', '#d3d7db', '#e1e4e6'],
+  tree: '#c3c8cd', pole: '#c8ccd1', fg: '#b7bcc3', wood: '#bdbfc2',
+  black: '#17181a', red: '#ff2e2e',
+};
+function resolvePalette(p) {
+  const merged = { ...DEFAULT_PALETTE, ...p };
+  return {
+    GROUND: Color3.FromHexString(merged.ground),
+    WATER: Color3.FromHexString(merged.water),
+    ROCK: Color3.FromHexString(merged.rock),
+    HILL: merged.hill.map((h) => Color3.FromHexString(h)),
+    TREE: Color3.FromHexString(merged.tree),
+    POLE: Color3.FromHexString(merged.pole),
+    FG: Color3.FromHexString(merged.fg),
+    WOOD: Color3.FromHexString(merged.wood),
+    BLACK: Color3.FromHexString(merged.black),
+    RED: Color3.FromHexString(merged.red),
+  };
+}
 
 // ---------- surface types: grip (climb/landing), drag (momentum sap), bump (chatter), accel, top ----------
 export const SURFACES = {
@@ -22,15 +36,18 @@ export const SURFACES = {
   broken: { grip: 0.85, drag: 0.6, bump: 0.11, accel: 7.0, top: 34, shade: 0.92 },
   sand: { grip: 0.55, drag: 1.7, bump: 0.02, accel: 5.4, top: 27, shade: 1.03 },
   mud: { grip: 0.42, drag: 1.25, bump: 0.03, accel: 5.0, top: 25, shade: 0.86 },
+  wet_tarmac: { grip: 0.78, drag: 0.4, bump: 0.0, accel: 7.0, top: 36, shade: 0.88 },
   wood: { grip: 0.9, drag: 0.4, bump: 0.02, accel: 7.2, top: 36, shade: 0.9 },
   water: { grip: 0.5, drag: 4.0, bump: 0.0, accel: 3.0, top: 22, shade: 0.8 },
 };
 
 // ---------- the water-crossing leg (Konkan creeks & backwaters) ----------
 export const LEG_CREEKS = {
+  id: 'creeks',
   name: 'CREEKS & BACKWATERS',
   subtitle: 'KONKAN COAST · TIME ATTACK',
   timeLimit: 17,          // starting countdown (seconds) — very tight; checkpoints add only +3
+  medal: { gold: 22, silver: 24 },   // finish elapsed seconds (clock budget ≈ 26s, so finishing at all is tight)
   fog: { start: 95, end: 340 },
   segments: [
     { type: 'flat', len: 22, surface: 'tarmac' },        // start pad / run-up
@@ -53,6 +70,41 @@ export const LEG_CREEKS = {
     { type: 'checkpoint', bonus: 3 },
     { type: 'climb', len: 20, surface: 'gravel', rise: 3.0 },
     { type: 'flat', len: 28, surface: 'tarmac' },        // run to the line
+    { type: 'finish' },
+  ],
+};
+
+// ---------- the tutorial leg (Pune plateau) ----------
+export const LEG_PUNE = {
+  id: 'pune',
+  name: 'PUNE PLATEAU',
+  subtitle: 'DECCAN TABLELAND · TUTORIAL RUN',
+  timeLimit: 32,          // generous vs. Creeks' 17s — this is the learn-the-controls leg
+  medal: { gold: 15, silver: 19 },
+  fog: { start: 110, end: 380 },   // dry, open plateau — long sightlines, not misty
+  // same near-zero saturation as the default (Creeks) palette — a hairline warm bias and a
+  // brighter value curve read as "dry, sun-bleached plateau" without introducing real color
+  palette: {
+    ground: '#dbd8d0', rock: '#d2cfc7',
+    hill: ['#c6c3ba', '#d4d1c8', '#e2dfd5'],
+    tree: '#bdbab1', pole: '#c7c4bb', fg: '#b4b1a8', wood: '#b9b6ac',
+  },
+  props: { palms: false, boats: false, grove: 0.3 },   // sparse, no coastal props
+  segments: [
+    { type: 'flat', len: 24, surface: 'tarmac' },        // start pad / run-up
+    { type: 'flat', len: 26, surface: 'tarmac' },         // free straight — learn top speed
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'rollers', len: 24, surface: 'gravel', amp: 0.5 },   // first gravel — gentle chatter/drag
+    { type: 'climb', len: 20, surface: 'tarmac', rise: 2.6 },
+    { type: 'descent', len: 18, surface: 'tarmac', drop: 2.6 },  // smooth grade, no launch — momentum feel
+    { type: 'flat', len: 20, surface: 'gravel' },
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'climb', len: 14, surface: 'tarmac', rise: 3.4 },    // short, steep — builds speed fast on full-grip tarmac
+    { type: 'descent', len: 10, surface: 'gravel', drop: 3.6 },  // the crest: launches, lands on gravel
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'flat', len: 18, surface: 'gravel' },          // recovery straight after the landing
+    { type: 'rollers', len: 20, surface: 'gravel', amp: 0.6 },
+    { type: 'flat', len: 30, surface: 'tarmac' },          // sprint to the line
     { type: 'finish' },
   ],
 };
@@ -137,6 +189,10 @@ export function buildLevel(scene, shadows, leg) {
     return m;
   };
   const spin = [];
+  const C = resolvePalette(leg.palette);
+  // per-biome decoration toggles; grove is a density multiplier, the rest are on/off.
+  // defaults match the original coastal set so a leg with no `props` looks unchanged.
+  const props = { palms: true, boats: true, turbines: true, poles: true, grove: 1, rocks: true, foreground: true, ...leg.props };
 
   // ---------- ribbon (surfaced, value-shaded) ----------
   const spanX = finishX - startX + 400;   // generous aprons (200m each side): ground runs well past the finish for the outro ride-off
@@ -156,9 +212,9 @@ export function buildLevel(scene, shadows, leg) {
     const shade = surfaceAt(wx).shade;
     const jit = shade * (1 + (rng() - 0.5) * 0.05);
     for (let v = 0; v < 3; v++) {
-      colors[(f + v) * 4] = GROUND.r * jit;
-      colors[(f + v) * 4 + 1] = GROUND.g * jit;
-      colors[(f + v) * 4 + 2] = GROUND.b * jit;
+      colors[(f + v) * 4] = C.GROUND.r * jit;
+      colors[(f + v) * 4 + 1] = C.GROUND.g * jit;
+      colors[(f + v) * 4 + 2] = C.GROUND.b * jit;
       colors[(f + v) * 4 + 3] = 1;
     }
   }
@@ -205,9 +261,9 @@ export function buildLevel(scene, shadows, leg) {
     m.position.set(midX, 0, zPos);
     m.material = flat('ridgeMat' + zPos, col);
   };
-  ridge(-150, 15, 10, HILL[2], 3.1);
-  ridge(-104, 11, 7, HILL[1], 1.7);
-  ridge(-60, 8, 5, HILL[0], 0.6);
+  ridge(-150, 15, 10, C.HILL[2], 3.1);
+  ridge(-104, 11, 7, C.HILL[1], 1.7);
+  ridge(-60, 8, 5, C.HILL[0], 0.6);
 
   // taller mountain band behind the start so the establishing shot has layered peaks
   {
@@ -221,7 +277,7 @@ export function buildLevel(scene, shadows, leg) {
     m.updateVerticesData(VertexBuffer.PositionKind, hp);
     m.convertToFlatShadedMesh();
     m.position.set(startX - 25, 0, -128);
-    m.material = flat('startMountainsMat', HILL[1]);
+    m.material = flat('startMountainsMat', C.HILL[1]);
   }
 
   // ---------- repeating distant silhouettes: a treeline/steeple band that fills the
@@ -230,7 +286,7 @@ export function buildLevel(scene, shadows, leg) {
   {
     // faceted distant conifers, thin-instanced across the full span at horizon depth
     const cone = MeshBuilder.CreateCylinder('hzTree', { height: 1, diameterTop: 0, diameterBottom: 0.6, tessellation: 5 }, scene);
-    cone.material = flat('hzTreeMat', HILL[0].scale(0.94));   // just darker than the ridge behind → reads as a treeline
+    cone.material = flat('hzTreeMat', C.HILL[0].scale(0.94));   // just darker than the ridge behind → reads as a treeline
     const buf = [];
     for (let gx = hxMin; gx <= hxMax; gx += 4.5) {
       const clump = 2 + Math.floor(rng() * 3);
@@ -251,7 +307,7 @@ export function buildLevel(scene, shadows, leg) {
   {
     // sparse taller spires (village steeples / lone palms) punctuating the treeline
     const spire = MeshBuilder.CreateCylinder('hzSpire', { height: 1, diameterTop: 0.05, diameterBottom: 0.35, tessellation: 5 }, scene);
-    spire.material = flat('hzSpireMat', HILL[0].scale(0.88));
+    spire.material = flat('hzSpireMat', C.HILL[0].scale(0.88));
     const buf = [];
     for (let gx = hxMin; gx <= hxMax; gx += 26) {
       const s = 6 + rng() * 4;
@@ -268,9 +324,9 @@ export function buildLevel(scene, shadows, leg) {
   }
 
   // ---------- water planes + red hazard posts ----------
-  const waterMat = flat('water', WATER, 0.0);   // matte — no specular white glare
-  const redMat = flat('red', RED);
-  const blackMat = flat('black', BLACK);
+  const waterMat = flat('water', C.WATER, 0.0);   // matte — no specular white glare
+  const redMat = flat('red', C.RED);
+  const blackMat = flat('black', C.BLACK);
   for (const w of waterZones) {
     const len = w.x1 - w.x0;
     const plane = MeshBuilder.CreateGround('waterPlane', { width: len + 1.5, height: 30, subdivisions: Math.max(2, Math.round(len)), updatable: true }, scene);
@@ -299,7 +355,7 @@ export function buildLevel(scene, shadows, leg) {
   }
 
   // ---------- plank bridges ----------
-  const woodMat = flat('wood', WOOD, 0.05);
+  const woodMat = flat('wood', C.WOOD, 0.05);
   for (const b of marks.bridges) {
     const deck = MeshBuilder.CreateBox('deck', { width: b.x1 - b.x0, height: 0.18, depth: 3.0 }, scene);
     deck.position.set((b.x0 + b.x1) / 2, b.y + 0.02, 0);
@@ -343,8 +399,8 @@ export function buildLevel(scene, shadows, leg) {
   const SA = startX;
   arch(SA, false);
   const lampOffMat = flat('lampOff', Color3.FromHexString('#26282c'));
-  const lampOnMat = flat('lampOn', RED, 0.2);
-  lampOnMat.emissiveColor = RED.scale(0.55);
+  const lampOnMat = flat('lampOn', C.RED, 0.2);
+  lampOnMat.emissiveColor = C.RED.scale(0.55);
   const startLamps = [];
   for (let i = -1; i <= 1; i++) {
     const lamp = MeshBuilder.CreateBox('lamp', { width: 0.32, height: 0.32, depth: 0.9 }, scene);
@@ -355,7 +411,7 @@ export function buildLevel(scene, shadows, leg) {
   }
 
   // ---------- coastal props: faceted palms, boats, foreground, poles, turbines ----------
-  const treeMat = flat('tree', TREE);
+  const treeMat = flat('tree', C.TREE);
   const palm = (px, pz, s) => {
     const y = profile(px);
     const trunk = MeshBuilder.CreateCylinder('palmT', { height: 3.2 * s, diameterTop: 0.14 * s, diameterBottom: 0.24 * s, tessellation: 5 }, scene);
@@ -372,9 +428,11 @@ export function buildLevel(scene, shadows, leg) {
       shadows.addShadowCaster(frond);
     }
   };
-  for (const m of marks.palms) {
-    palm(m.x0 - 2 + rng() * 2, -8 - rng() * 6, 0.9 + rng() * 0.6);
-    palm(m.x1 + 1 + rng() * 2, -9 - rng() * 5, 0.9 + rng() * 0.6);
+  if (props.palms) {
+    for (const m of marks.palms) {
+      palm(m.x0 - 2 + rng() * 2, -8 - rng() * 6, 0.9 + rng() * 0.6);
+      palm(m.x1 + 1 + rng() * 2, -9 - rng() * 5, 0.9 + rng() * 0.6);
+    }
   }
   // faceted tree builder (used by the leg scatter and the start grove)
   const miniTree = (gx, z, s) => {
@@ -386,23 +444,25 @@ export function buildLevel(scene, shadows, leg) {
     return c1;
   };
   // dense grove flanking the approach & start arch — parallax richness for the roll-in
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < Math.round(18 * props.grove); i++) {
     const gx = startX - 48 + rng() * 62;
     miniTree(gx, -6 - rng() * 22, 0.7 + rng() * 1.1);
   }
   // boulders around the start shoulders
-  for (let i = 0; i < 8; i++) {
-    const r = 0.5 + rng() * 1.1;
-    const rock = MeshBuilder.CreatePolyhedron('startRock', { type: 3, size: r * 0.6 }, scene);
-    const gx = startX - 42 + rng() * 52;
-    rock.position.set(gx, profile(gx) + r * 0.22, -4 - rng() * 11);
-    rock.rotation.set(rng() * 3, rng() * 3, rng() * 3);
-    rock.material = flat('startRockMat' + i, ROCK);
-    rock.receiveShadows = true;
-    shadows.addShadowCaster(rock);
+  if (props.rocks) {
+    for (let i = 0; i < 8; i++) {
+      const r = 0.5 + rng() * 1.1;
+      const rock = MeshBuilder.CreatePolyhedron('startRock', { type: 3, size: r * 0.6 }, scene);
+      const gx = startX - 42 + rng() * 52;
+      rock.position.set(gx, profile(gx) + r * 0.22, -4 - rng() * 11);
+      rock.rotation.set(rng() * 3, rng() * 3, rng() * 3);
+      rock.material = flat('startRockMat' + i, C.ROCK);
+      rock.receiveShadows = true;
+      shadows.addShadowCaster(rock);
+    }
   }
   // scattered faceted trees along the whole leg (and out past the finish for the ride-off)
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < Math.round(30 * props.grove); i++) {
     const gx = startX + 10 + rng() * (finishX - startX + 150);
     const s = 0.8 + rng() * 1.0, y = profile(gx), z = -10 - rng() * 16;
     const trunk = MeshBuilder.CreateCylinder('tt', { height: 1.3 * s, diameterTop: 0.12 * s, diameterBottom: 0.2 * s, tessellation: 5 }, scene);
@@ -411,64 +471,72 @@ export function buildLevel(scene, shadows, leg) {
     c1.position.set(gx, y + 1.6 * s, z); c1.rotation.y = rng() * 3; c1.material = treeMat; shadows.addShadowCaster(c1);
   }
   // fishing boats near water zones
-  const boatMat = flat('boat', HILL[1]);
-  for (const w of waterZones) {
-    const bx = (w.x0 + w.x1) / 2 + (rng() - 0.5) * 4;
-    const hull = MeshBuilder.CreateCylinder('hull', { height: 3.0, diameterTop: 0.9, diameterBottom: 0, tessellation: 4 }, scene);
-    hull.rotation.z = Math.PI / 2; hull.rotation.y = rng();
-    hull.scaling.set(1, 1, 0.5);
-    hull.position.set(bx, w.waterY + 0.3, -7 - rng() * 4);
-    hull.material = boatMat;
-    shadows.addShadowCaster(hull);
+  if (props.boats) {
+    const boatMat = flat('boat', C.HILL[1]);
+    for (const w of waterZones) {
+      const bx = (w.x0 + w.x1) / 2 + (rng() - 0.5) * 4;
+      const hull = MeshBuilder.CreateCylinder('hull', { height: 3.0, diameterTop: 0.9, diameterBottom: 0, tessellation: 4 }, scene);
+      hull.rotation.z = Math.PI / 2; hull.rotation.y = rng();
+      hull.scaling.set(1, 1, 0.5);
+      hull.position.set(bx, w.waterY + 0.3, -7 - rng() * 4);
+      hull.material = boatMat;
+      shadows.addShadowCaster(hull);
+    }
   }
 
   // utility poles + wire
-  const poleMat = flat('pole', POLE);
-  const wireSeg = (a, b) => {
-    const d = b.subtract(a), len = d.length();
-    const wm = MeshBuilder.CreateBox('wire', { width: 0.035, height: 0.035, depth: len }, scene);
-    wm.position.copyFrom(a.add(b).scale(0.5)); wm.lookAt(b); wm.material = poleMat;
-  };
-  let prevTop = null;
-  for (let gx = startX - 44; gx <= finishX + 168; gx += 24) {   // wires lead the eye in, and carry on past the finish for the ride-off
-    const y = profile(gx);
-    const pole = MeshBuilder.CreateCylinder('pole', { height: 4.2, diameter: 0.15, tessellation: 5 }, scene);
-    pole.position.set(gx, y + 2.1, -4.6); pole.material = poleMat; shadows.addShadowCaster(pole);
-    const arm = MeshBuilder.CreateBox('arm', { width: 1.0, height: 0.12, depth: 0.12 }, scene);
-    arm.position.set(gx, y + 3.9, -4.6); arm.material = poleMat;
-    const top = new Vector3(gx, y + 3.85, -4.6);
-    if (prevTop) { const mid = prevTop.add(top).scale(0.5); mid.y -= 0.7; wireSeg(prevTop, mid); wireSeg(mid, top); }
-    prevTop = top;
+  if (props.poles) {
+    const poleMat = flat('pole', C.POLE);
+    const wireSeg = (a, b) => {
+      const d = b.subtract(a), len = d.length();
+      const wm = MeshBuilder.CreateBox('wire', { width: 0.035, height: 0.035, depth: len }, scene);
+      wm.position.copyFrom(a.add(b).scale(0.5)); wm.lookAt(b); wm.material = poleMat;
+    };
+    let prevTop = null;
+    for (let gx = startX - 44; gx <= finishX + 168; gx += 24) {   // wires lead the eye in, and carry on past the finish for the ride-off
+      const y = profile(gx);
+      const pole = MeshBuilder.CreateCylinder('pole', { height: 4.2, diameter: 0.15, tessellation: 5 }, scene);
+      pole.position.set(gx, y + 2.1, -4.6); pole.material = poleMat; shadows.addShadowCaster(pole);
+      const arm = MeshBuilder.CreateBox('arm', { width: 1.0, height: 0.12, depth: 0.12 }, scene);
+      arm.position.set(gx, y + 3.9, -4.6); arm.material = poleMat;
+      const top = new Vector3(gx, y + 3.85, -4.6);
+      if (prevTop) { const mid = prevTop.add(top).scale(0.5); mid.y -= 0.7; wireSeg(prevTop, mid); wireSeg(mid, top); }
+      prevTop = top;
+    }
   }
 
   // wind turbines (distant, animated)
-  const turbMat = flat('turb', HILL[1]);
-  const turbine = (tx, tz, s) => {
-    const tower = MeshBuilder.CreateCylinder('twr', { height: 9 * s, diameterTop: 0.16 * s, diameterBottom: 0.34 * s, tessellation: 6 }, scene);
-    tower.position.set(tx, 4.1 * s, tz); tower.material = turbMat; shadows.addShadowCaster(tower);
-    const hub = new TransformNode('hub', scene); hub.position.set(tx, 8.6 * s, tz);
-    for (let b = 0; b < 3; b++) {
-      const a = b * 2.094;
-      const blade = MeshBuilder.CreateBox('bl', { width: 0.2 * s, height: 3.4 * s, depth: 0.07 * s }, scene);
-      blade.position.set(Math.sin(a) * 1.7 * s, Math.cos(a) * 1.7 * s, 0); blade.rotation.z = -a;
-      blade.material = turbMat; blade.parent = hub;
-    }
-    spin.push(hub);
-  };
-  turbine(startX + 60, -66, 1.5); turbine(midX + 20, -80, 1.8); turbine(finishX - 30, -68, 1.4);
-  turbine(startX - 36, -72, 1.7); turbine(startX - 4, -88, 2.0);   // skyline behind the start
-  turbine(finishX + 45, -70, 1.6); turbine(finishX + 120, -84, 1.9);   // skyline the outro rides toward
+  if (props.turbines) {
+    const turbMat = flat('turb', C.HILL[1]);
+    const turbine = (tx, tz, s) => {
+      const tower = MeshBuilder.CreateCylinder('twr', { height: 9 * s, diameterTop: 0.16 * s, diameterBottom: 0.34 * s, tessellation: 6 }, scene);
+      tower.position.set(tx, 4.1 * s, tz); tower.material = turbMat; shadows.addShadowCaster(tower);
+      const hub = new TransformNode('hub', scene); hub.position.set(tx, 8.6 * s, tz);
+      for (let b = 0; b < 3; b++) {
+        const a = b * 2.094;
+        const blade = MeshBuilder.CreateBox('bl', { width: 0.2 * s, height: 3.4 * s, depth: 0.07 * s }, scene);
+        blade.position.set(Math.sin(a) * 1.7 * s, Math.cos(a) * 1.7 * s, 0); blade.rotation.z = -a;
+        blade.material = turbMat; blade.parent = hub;
+      }
+      spin.push(hub);
+    };
+    turbine(startX + 60, -66, 1.5); turbine(midX + 20, -80, 1.8); turbine(finishX - 30, -68, 1.4);
+    turbine(startX - 36, -72, 1.7); turbine(startX - 4, -88, 2.0);   // skyline behind the start
+    turbine(finishX + 45, -70, 1.6); turbine(finishX + 120, -84, 1.9);   // skyline the outro rides toward
+  }
 
   // sparse foreground silhouettes (in front of camera)
-  const fgMat = flat('fg', FG);
-  for (let i = 0; i < 20; i++) {
-    const r = 0.28 + rng() * 0.5;
-    const t = MeshBuilder.CreatePolyhedron('fg', { type: 3, size: r * 0.6 }, scene);
-    const gx = startX + rng() * (finishX - startX + 150);
-    t.position.set(gx, profile(gx) + r * 0.2, 3 + rng() * 3.5);
-    t.rotation.set(rng() * 3, rng() * 3, rng() * 3);
-    t.material = fgMat;
-    shadows.addShadowCaster(t);
+  if (props.foreground) {
+    const fgMat = flat('fg', C.FG);
+    for (let i = 0; i < 20; i++) {
+      const r = 0.28 + rng() * 0.5;
+      const t = MeshBuilder.CreatePolyhedron('fg', { type: 3, size: r * 0.6 }, scene);
+      const gx = startX + rng() * (finishX - startX + 150);
+      t.position.set(gx, profile(gx) + r * 0.2, 3 + rng() * 3.5);
+      t.rotation.set(rng() * 3, rng() * 3, rng() * 3);
+      t.material = fgMat;
+      shadows.addShadowCaster(t);
+    }
   }
 
   return {
