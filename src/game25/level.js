@@ -46,30 +46,30 @@ export const LEG_CREEKS = {
   id: 'creeks',
   name: 'CREEKS & BACKWATERS',
   subtitle: 'KONKAN COAST · TIME ATTACK',
-  timeLimit: 17,          // starting countdown (seconds) — very tight; checkpoints add only +3
-  medal: { gold: 22, silver: 24 },   // finish elapsed seconds (clock budget ≈ 26s, so finishing at all is tight)
+  timeLimit: 26,          // starting countdown (seconds) — checkpoints add +3 each (x3)
+  medal: { gold: 30, silver: 33 },   // finish elapsed seconds (clock budget = 35s)
   fog: { start: 95, end: 340 },
   segments: [
-    { type: 'flat', len: 22, surface: 'tarmac' },        // start pad / run-up
-    { type: 'rollers', len: 34, surface: 'gravel', amp: 0.7 },
+    { type: 'flat', len: 38, surface: 'tarmac' },        // start pad / run-up (extended)
+    { type: 'rollers', len: 58, surface: 'gravel', amp: 0.7 },   // extended
     { type: 'climb', len: 20, surface: 'gravel', rise: 2.4 },
     { type: 'descent', len: 20, surface: 'gravel', drop: 3.4 },   // down to the creek
     { type: 'ford', len: 15, dip: 0.5 },                 // shallow creek — carry momentum to climb out
     { type: 'checkpoint', bonus: 3 },
     { type: 'climb', len: 24, surface: 'gravel', rise: 3.8 },     // the climb-out (the momentum puzzle)
-    { type: 'flat', len: 16, surface: 'tarmac' },
-    { type: 'rollers', len: 26, surface: 'sand', amp: 0.6 },      // beach sand — drag
-    { type: 'flat', len: 18, surface: 'gravel' },                 // gravel run-up (flat lip — no ramp)
+    { type: 'flat', len: 28, surface: 'tarmac' },        // extended
+    { type: 'rollers', len: 44, surface: 'sand', amp: 0.6 },      // beach sand — drag (extended)
+    { type: 'flat', len: 30, surface: 'gravel' },                 // gravel run-up (extended, flat lip — no ramp)
     { type: 'gap', len: 12, pit: 3.4 },                  // THE gap — smaller & more forgiving; Space-jump at the red line
     { type: 'checkpoint', bonus: 3 },                   // landing zone
-    { type: 'flat', len: 16, surface: 'gravel' },
-    { type: 'flat', len: 22, surface: 'gravel' },        // gravel road (was the plank bridge)
+    { type: 'flat', len: 28, surface: 'gravel' },        // extended
+    { type: 'flat', len: 38, surface: 'gravel' },        // gravel road (was the plank bridge) (extended)
     { type: 'climb', len: 18, surface: 'gravel', rise: 2.8 },
     { type: 'descent', len: 16, surface: 'broken', drop: 2.4 },   // broken road down
     { type: 'ford', len: 13, dip: 0.45 },                // second creek
     { type: 'checkpoint', bonus: 3 },
     { type: 'climb', len: 20, surface: 'gravel', rise: 3.0 },
-    { type: 'flat', len: 28, surface: 'tarmac' },        // run to the line
+    { type: 'flat', len: 48, surface: 'tarmac' },        // run to the line (extended)
     { type: 'finish' },
   ],
 };
@@ -79,9 +79,9 @@ export const LEG_PUNE = {
   id: 'pune',
   name: 'PUNE PLATEAU',
   subtitle: 'DECCAN TABLELAND · TUTORIAL RUN',
-  timeLimit: 35,          // generous vs. Creeks' 17s — this is the learn-the-controls leg
-  medal: { gold: 17, silver: 21 },
-  fog: { start: 110, end: 380 },   // dry, open plateau — long sightlines, not misty
+  timeLimit: 64,          // generous vs. Creeks' 26s — this is the learn-the-controls leg
+  medal: { gold: 31, silver: 38 },
+  fog: { start: 110, end: 480 },   // dry, open plateau — long sightlines, not misty
   // same near-zero saturation as the default (Creeks) palette — a hairline warm bias and a
   // brighter value curve read as "dry, sun-bleached plateau" without introducing real color
   palette: {
@@ -91,22 +91,28 @@ export const LEG_PUNE = {
   },
   props: { palms: false, boats: false, grove: 0.3 },   // sparse, no coastal props
   segments: [
-    { type: 'flat', len: 24, surface: 'tarmac' },        // start pad / run-up
-    { type: 'flat', len: 26, surface: 'tarmac' },         // free straight — learn top speed
+    { type: 'flat', len: 34, surface: 'tarmac' },        // start pad / run-up (extended)
+    { type: 'flat', len: 40, surface: 'tarmac' },         // free straight — learn top speed (extended)
     { type: 'checkpoint', bonus: 5 },
-    { type: 'rollers', len: 24, surface: 'gravel', amp: 0.5 },   // first gravel — gentle chatter/drag
+    { type: 'rollers', len: 40, surface: 'gravel', amp: 0.5 },   // first gravel — gentle chatter/drag (extended)
     { type: 'climb', len: 20, surface: 'tarmac', rise: 2.6 },
     { type: 'descent', len: 18, surface: 'tarmac', drop: 2.6 },  // smooth grade, no launch — momentum feel
-    { type: 'flat', len: 20, surface: 'gravel' },
+    { type: 'flat', len: 40, surface: 'gravel' },          // extended
     { type: 'climb', len: 14, surface: 'tarmac', rise: 3.4 },    // short, steep — builds speed fast on full-grip tarmac
     { type: 'descent', len: 10, surface: 'gravel', drop: 3.6 },  // the crest: launches, lands on gravel
-    { type: 'flat', len: 18, surface: 'gravel' },          // recovery straight after the landing
-    { type: 'rollers', len: 20, surface: 'gravel', amp: 0.6 },
+    { type: 'flat', len: 30, surface: 'gravel' },          // recovery straight after the landing (extended)
+    { type: 'rollers', len: 20, surface: 'gravel', amp: 0.4 },    // amp kept ≤0.4 — a rollers segment ending right at a
+                                                            // checkpoint can launch off its own boundary discontinuity
+    { type: 'flat', len: 14, surface: 'gravel' },          // buffer — absorbs the rollers/checkpoint handoff
     { type: 'checkpoint', bonus: 5 },                      // moved well clear of the crest's landing spread —
-                                                            // 18m recovery + a full rollers section past the launch
+                                                            // 30m recovery + a full rollers section past the launch
     { type: 'climb', len: 12, surface: 'gravel', rise: 1.6 },     // second technical moment: a loose-surface climb —
     { type: 'descent', len: 10, surface: 'gravel', drop: 1.6 },   // too much throttle here spins the rear wheel, not launches it
-    { type: 'flat', len: 30, surface: 'tarmac' },          // sprint to the line
+    { type: 'flat', len: 20, surface: 'tarmac' },          // new: buffer after the second crest
+    { type: 'rollers', len: 56, surface: 'gravel', amp: 0.5 },    // new: long gravel roller straight — third stretch of variety
+    { type: 'climb', len: 16, surface: 'tarmac', rise: 2.0 },     // new: third technical moment — a gentler crest
+    { type: 'descent', len: 14, surface: 'gravel', drop: 2.0 },   // new: launches again, lands well clear of the finish
+    { type: 'flat', len: 46, surface: 'tarmac' },          // sprint to the line (extended)
     { type: 'finish' },
   ],
 };
