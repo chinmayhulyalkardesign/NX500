@@ -122,9 +122,9 @@ export const LEG_GHATS = {
   id: 'ghats',
   name: 'INTO THE GHATS',
   subtitle: 'TAMHINI · TIME ATTACK',
-  timeLimit: 26,
-  medal: { gold: 30, silver: 36 },
-  fog: { start: 42, end: 165 },    // dense, close mist — the whole point of the leg
+  timeLimit: 38,
+  medal: { gold: 44, silver: 52 },
+  fog: { start: 42, end: 220 },    // dense, close mist — the whole point of the leg
   // same near-zero saturation as every other leg (no real hue, ever) — a deeper, cooler bias
   // and lower value than Creeks/Pune reads as "shaded, damp, closed-in forest" through
   // brightness alone, same spread (~10-14 RGB points) as the rest of the palette family
@@ -135,19 +135,22 @@ export const LEG_GHATS = {
   },
   props: { palms: false, boats: false, turbines: false, poles: false, grove: 1.7, rocks: true, foreground: true, waterfalls: true },
   segments: [
-    { type: 'flat', len: 22, surface: 'tarmac' },          // start pad
+    { type: 'flat', len: 34, surface: 'tarmac' },          // start pad (extended)
     { type: 'rollers', len: 20, surface: 'gravel', amp: 0.4 },   // kept under the natural-launch threshold even at speed —
     { type: 'checkpoint', bonus: 6 },                            // a checkpoint sits right after it, must stay grounded
     { type: 'climb', len: 46, surface: 'wet_tarmac', rise: 7.5 },   // the long grade — carry momentum or wheelspin stalls you
-    { type: 'flat', len: 14, surface: 'wet_tarmac' },        // a brief false summit — no descent yet, keep climbing pressure on
+    { type: 'flat', len: 24, surface: 'wet_tarmac' },        // a brief false summit — no descent yet, keep climbing pressure on (extended)
     { type: 'checkpoint', bonus: 6 },
     { type: 'climb', len: 20, surface: 'wet_tarmac', rise: 3.0 },   // second, shorter pitch — compounds on an already-tired line
     { type: 'descent', len: 22, surface: 'gravel', drop: 3.2 },     // gentle way down off the ridge — no launch, just a breather
+    { type: 'flat', len: 26, surface: 'gravel' },           // new: the valley floor — a real breather before the next climb
     { type: 'rollers', len: 18, surface: 'gravel', amp: 0.4 },
     { type: 'flat', len: 16, surface: 'gravel' },       // absorbs the rollers' end-of-segment height discontinuity
     { type: 'checkpoint', bonus: 6 },                    // before the checkpoint gate, same fix class as the Pune bug
     { type: 'climb', len: 24, surface: 'wet_tarmac', rise: 4.2 },   // final pitch — wet grip when you're already gassed
-    { type: 'flat', len: 26, surface: 'tarmac' },            // the road dries out — sprint to the line
+    { type: 'descent', len: 22, surface: 'wet_tarmac', drop: 3.0 },   // new: over the top and down the far side — no launch, still wet
+    { type: 'rollers', len: 26, surface: 'gravel', amp: 0.4 },        // new: the descent settles into loose gravel switchbacks
+    { type: 'flat', len: 46, surface: 'tarmac' },            // the road dries out — sprint to the line (extended)
     { type: 'finish' },
   ],
 };
