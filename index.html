@@ -43,6 +43,15 @@
         color: #17181a; text-align: center; display: none; white-space: pre-line; line-height: 1.7;
         background: rgba(237, 238, 240, 0.86); padding: 22px 34px; border-radius: 14px; z-index: 9;
       }
+      #msg .msgActions { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+      #msg .msgActions button {
+        font-family: monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.14em;
+        padding: 11px 20px; cursor: pointer; background: transparent; border-radius: 3px;
+      }
+      #msg .msgActions .primary { border: 2px solid #ff2e2e; color: #ff2e2e; }
+      #msg .msgActions .primary:hover { background: rgba(255, 46, 46, 0.12); }
+      #msg .msgActions .secondary { border: 1px solid #8a8c90; color: #6b6d70; }
+      #msg .msgActions .secondary:hover { border-color: #17181a; color: #17181a; }
       #hint { bottom: 18px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #9a9da2; }
       /* touch devices: the keyboard hint is meaningless — hide it */
       @media (pointer: coarse) { #hint { display: none; } }

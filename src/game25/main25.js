@@ -22,6 +22,14 @@ document.querySelectorAll('#legPicker .legBtn').forEach((el) => {
   el.href = `?${params.toString()}`;   // preserves e.g. ?touch=1 across leg switches
   el.classList.toggle('active', el.dataset.leg === CURRENT_LEG_ID);
 });
+// back to the Start screen's leg picker (drops ?leg so it re-renders that choice, keeps
+// everything else e.g. ?touch=1) — a full reload, since the scene is only ever built once
+function goToLegSelect() {
+  const params = new URLSearchParams(location.search);
+  params.delete('leg');
+  const qs = params.toString();
+  location.href = qs ? `?${qs}` : location.pathname;
+}
 
 const WORLD_BG = Color3.FromHexString('#edeef0');
 const BIKE_RED = Color3.FromHexString('#e12b2b');
@@ -316,6 +324,7 @@ window.addEventListener('keydown', (e) => {
   if (k) { input[k] = true; e.preventDefault(); }   // take-off (stage → racing) is handled in frame() so a held W launches at GO too
   if (e.key === ' ') { jumpRequested = true; e.preventDefault(); }   // Space = hop the bike
   if (e.key.toLowerCase() === 'r') resetMission();
+  if (e.key.toLowerCase() === 'l' && ended) goToLegSelect();
 });
 window.addEventListener('keyup', (e) => { const k = KEYMAP[e.key.toLowerCase()]; if (k) input[k] = false; });
 
@@ -419,6 +428,15 @@ function resetMission() {
 
 function fmt(t) { const m = Math.floor(Math.max(0, t) / 60), s = Math.max(0, t) - m * 60; return `${m}:${s.toFixed(1).padStart(4, '0')}`; }
 function medalFor(t) { return t <= MEDAL.gold ? 'GOLD' : t <= MEDAL.silver ? 'SILVER' : 'BRONZE'; }
+// result screen: same two actions (restart this leg / pick another) regardless of how the
+// attempt ended, so the markup + wiring lives in one place
+function setResultMsg(headline, restartLabel) {
+  hud.msg.innerHTML = `${headline}\n\n<div class="msgActions">`
+    + `<button class="primary" id="msgRestart">${restartLabel}</button>`
+    + `<button class="secondary" id="msgLevels">LEVELS</button></div>`;
+  hud.msg.querySelector('#msgRestart').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); resetMission(); });
+  hud.msg.querySelector('#msgLevels').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); goToLegSelect(); });
+}
 
 function updateMission(dt) {
   // cinematic countdown roll-in: the bike creeps toward the line while the gantry lights
@@ -459,10 +477,10 @@ function updateMission(dt) {
       const prev = parseFloat(localStorage.getItem(BEST_KEY) || 'Infinity');
       const isBest = finalTime < prev; if (isBest) localStorage.setItem(BEST_KEY, finalTime.toFixed(2));
       const medal = medalFor(finalTime);
-      hud.msg.textContent = `${medal}   ${fmt(finalTime)}\nbest ${fmt(Math.min(finalTime, prev))}${isBest ? '  ★ new' : ''}\n\nR to ride again`;
+      setResultMsg(`${medal}   ${fmt(finalTime)}\nbest ${fmt(Math.min(finalTime, prev))}${isBest ? '  ★ new' : ''}`, 'RIDE AGAIN');
     } else if (timeLeft <= 0) {
       ended = true; timeLeft = 0; raceState = 'timeup';
-      hud.msg.textContent = `TIME UP\nyou ran out of time\n\nR to retry`;
+      setResultMsg('TIME UP\nyou ran out of time', 'RETRY');
       hud.msg.style.display = 'block';
     }
   }
