@@ -169,10 +169,10 @@ function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.
 // user gesture that unlocks audio, rather than racing an arbitrary early keydown/tap against
 // the AudioContext unlocking.
 const engineLoopSound = new Sound('engineLoop', '/audio/engine-loop.mp3', scene, null, { loop: true, autoplay: false, volume: 0.25 });
-// per-leg mix: same shared synthwave track by default (src can point at a leg-specific file
-// instead, once one exists — everything else here still applies), offset/length pick a phrase
-// to loop, playbackRate (pitch+tempo together) and volume give each leg a distinct feel
-const bgmConf = { src: '/audio/bgm.mp3', offset: 0, length: 20, rate: 1.0, volume: 0.3, ...CURRENT_LEG.bgm };
+// per-leg mix: each leg points `src` at its own pre-cut clip (falling back to the original
+// shared file if a leg omits it); offset/length are optional — omit them to just loop the
+// clip's own full length — while playbackRate and volume give extra character on top
+const bgmConf = { src: '/audio/bgm.mp3', rate: 1.0, volume: 0.3, ...CURRENT_LEG.bgm };
 const bgmSound = new Sound('bgm', bgmConf.src, scene, null, {
   loop: true, autoplay: false, volume: bgmConf.volume,
   offset: bgmConf.offset, length: bgmConf.length, playbackRate: bgmConf.rate,
