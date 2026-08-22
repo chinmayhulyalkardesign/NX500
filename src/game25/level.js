@@ -155,6 +155,43 @@ export const LEG_GHATS = {
   ],
 };
 
+// ---------- down into the valley (Mulshi) ----------
+export const LEG_VALLEY = {
+  id: 'valley',
+  name: 'MULSHI VALLEY',
+  subtitle: 'KONKAN FOOTHILLS · TIME ATTACK',
+  timeLimit: 30,
+  medal: { gold: 35, silver: 42 },
+  fog: { start: 70, end: 260 },   // humid valley floor — hazier than Pune, less choking than the Ghats' mist
+  // near-zero saturation, same family as every other leg — a hairline GREEN bias (G channel a
+  // touch above R/B, still only a few points of spread) reads as "lush jungle valley" through
+  // value and density of foliage props, never through real hue/saturation
+  palette: {
+    ground: '#c9d0c6', water: '#a9b8ae', rock: '#c2cbc0',
+    hill: ['#b5beb3', '#c4cdc1', '#d3dcd0'],
+    tree: '#9fac9c', pole: '#bbc4b7', fg: '#a6b1a2', wood: '#b2bcae',
+  },
+  props: { palms: true, boats: true, turbines: false, poles: true, grove: 2.0, rocks: true, foreground: true, waterfalls: false },
+  segments: [
+    { type: 'flat', len: 36, surface: 'tarmac' },          // carrying speed down off the ghat's summit
+    { type: 'descent', len: 20, surface: 'gravel', drop: 3.0 },   // dropping into the valley
+    { type: 'flat', len: 22, surface: 'gravel' },          // buffer — absorbs the descent before the gate
+    { type: 'checkpoint', bonus: 6 },
+    { type: 'rollers', len: 54, surface: 'mud', amp: 0.4 },       // first taste of mud — sustained low-grip chatter, not a single wet pitch
+    { type: 'climb', len: 18, surface: 'mud', rise: 2.2 },        // mud climb — grip 0.42 bites far harder than the Ghats' wet_tarmac ever did
+    { type: 'flat', len: 40, surface: 'mud' },              // the control test continues — a long straight that never lets grip return
+    { type: 'checkpoint', bonus: 6 },
+    { type: 'ford', len: 18, dip: 0.4 },                    // a backwater channel — wide and slow, not a rushing creek
+    { type: 'flat', len: 32, surface: 'gravel' },           // regroup on the far bank
+    { type: 'bridge', len: 20 },                            // a wooden bridge over a tributary stream — first use in the game
+    { type: 'flat', len: 28, surface: 'gravel' },
+    { type: 'checkpoint', bonus: 6 },
+    { type: 'climb', len: 14, surface: 'gravel', rise: 2.0 },     // short climb back out of the valley — a breather, no mud left
+    { type: 'flat', len: 60, surface: 'tarmac' },           // the road firms back to tarmac — sprint to the line
+    { type: 'finish' },
+  ],
+};
+
 const DX = 0.5;
 function smooth(t) { return t * t * (3 - 2 * t); }
 

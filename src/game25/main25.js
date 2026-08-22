@@ -6,12 +6,12 @@ import {
   ParticleSystem, DynamicTexture, Sound,
 } from '@babylonjs/core';
 import '@babylonjs/loaders/glTF';
-import { buildLevel, LEG_CREEKS, LEG_PUNE, LEG_GHATS } from './level.js';
+import { buildLevel, LEG_CREEKS, LEG_PUNE, LEG_GHATS, LEG_VALLEY } from './level.js';
 
 // ---------- leg selection ----------
 // resolved before any Babylon object is constructed, since the whole scene is built once at
 // module load; the Start screen's leg picker just navigates to the right ?leg= URL.
-const LEGS = { [LEG_PUNE.id]: LEG_PUNE, [LEG_GHATS.id]: LEG_GHATS, [LEG_CREEKS.id]: LEG_CREEKS };
+const LEGS = { [LEG_PUNE.id]: LEG_PUNE, [LEG_GHATS.id]: LEG_GHATS, [LEG_VALLEY.id]: LEG_VALLEY, [LEG_CREEKS.id]: LEG_CREEKS };
 const DEFAULT_LEG_ID = 'pune';   // leg 1 is the natural entry point / tutorial
 const legIdParam = new URLSearchParams(location.search).get('leg');
 const CURRENT_LEG_ID = LEGS[legIdParam] ? legIdParam : DEFAULT_LEG_ID;
