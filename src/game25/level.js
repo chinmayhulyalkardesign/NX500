@@ -247,8 +247,9 @@ function computeLevel(leg) {
     return SURFACES[surfAt[Math.max(0, Math.min(surfAt.length - 1, i))]] || SURFACES.tarmac;
   };
   const waterAt = (qx) => waterZones.find((w) => qx >= w.x0 && qx <= w.x1) || null;
+  const minY = Math.min(0, ...heights);   // lowest point the track ever reaches, relative to datum
 
-  return { startX, finishX, profile, slopeAt, surfaceAt, waterAt, waterZones, checkpoints, marks, surfKeys: surfAt };
+  return { startX, finishX, profile, slopeAt, surfaceAt, waterAt, waterZones, checkpoints, marks, surfKeys: surfAt, minY };
 }
 
 // ---------- geometry ----------
@@ -264,7 +265,11 @@ function smoothstep(x, a, b) { const t = Math.min(1, Math.max(0, (x - a) / (b - 
 
 export function buildLevel(scene, shadows, leg) {
   const L = computeLevel(leg);
-  const { startX, finishX, profile, surfaceAt, waterZones, checkpoints, marks } = L;
+  const { startX, finishX, profile, surfaceAt, waterZones, checkpoints, marks, minY } = L;
+  // the parallax backdrop (hills/treeline) sits at a fixed datum height; if the track dips well
+  // below 0 (a valley leg), shift the whole backdrop down with it so the camera — which follows
+  // the track's real elevation — never opens a gap between the near ground and the far hills
+  const bgY = minY;
   const rng = mulberry32(2025);
   const flat = (name, color, spec = 0) => {
     const m = new StandardMaterial(name, scene);
@@ -341,7 +346,7 @@ export function buildLevel(scene, shadows, leg) {
     }
     m.updateVerticesData(VertexBuffer.PositionKind, hp);
     m.convertToFlatShadedMesh();
-    m.position.set(midX, 0, zPos);
+    m.position.set(midX, bgY, zPos);
     m.material = flat('ridgeMat' + zPos, col);
   };
   ridge(-150, 15, 10, C.HILL[2], 3.1);
@@ -359,7 +364,7 @@ export function buildLevel(scene, shadows, leg) {
     }
     m.updateVerticesData(VertexBuffer.PositionKind, hp);
     m.convertToFlatShadedMesh();
-    m.position.set(startX - 25, 0, -128);
+    m.position.set(startX - 25, bgY, -128);
     m.material = flat('startMountainsMat', C.HILL[1]);
   }
 
@@ -379,7 +384,7 @@ export function buildLevel(scene, shadows, leg) {
         const m = Matrix.Compose(
           new Vector3(s * 0.7, s, s * 0.7),
           Quaternion.FromEulerAngles(0, rng() * 3, 0),
-          new Vector3(gx + (rng() - 0.5) * 4, s * 0.5 - 0.5, zz),
+          new Vector3(gx + (rng() - 0.5) * 4, s * 0.5 - 0.5 + bgY, zz),
         );
         for (let e = 0; e < 16; e++) buf.push(m.m[e]);
       }
@@ -398,7 +403,7 @@ export function buildLevel(scene, shadows, leg) {
       const m = Matrix.Compose(
         new Vector3(s * 0.18, s, s * 0.18),
         Quaternion.Identity(),
-        new Vector3(gx + (rng() - 0.5) * 10, s * 0.5 - 0.5, zz),
+        new Vector3(gx + (rng() - 0.5) * 10, s * 0.5 - 0.5 + bgY, zz),
       );
       for (let e = 0; e < 16; e++) buf.push(m.m[e]);
     }
@@ -593,8 +598,8 @@ export function buildLevel(scene, shadows, leg) {
     const turbMat = flat('turb', C.HILL[1]);
     const turbine = (tx, tz, s) => {
       const tower = MeshBuilder.CreateCylinder('twr', { height: 9 * s, diameterTop: 0.16 * s, diameterBottom: 0.34 * s, tessellation: 6 }, scene);
-      tower.position.set(tx, 4.1 * s, tz); tower.material = turbMat; shadows.addShadowCaster(tower);
-      const hub = new TransformNode('hub', scene); hub.position.set(tx, 8.6 * s, tz);
+      tower.position.set(tx, 4.1 * s + bgY, tz); tower.material = turbMat; shadows.addShadowCaster(tower);
+      const hub = new TransformNode('hub', scene); hub.position.set(tx, 8.6 * s + bgY, tz);
       for (let b = 0; b < 3; b++) {
         const a = b * 2.094;
         const blade = MeshBuilder.CreateBox('bl', { width: 0.2 * s, height: 3.4 * s, depth: 0.07 * s }, scene);
