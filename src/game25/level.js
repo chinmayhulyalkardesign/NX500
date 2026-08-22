@@ -49,6 +49,11 @@ export const LEG_CREEKS = {
   timeLimit: 26,          // starting countdown (seconds) — checkpoints add +3 each (x3)
   medal: { gold: 30, silver: 33 },   // finish elapsed seconds (clock budget = 35s)
   fog: { start: 95, end: 340 },
+  // same synthwave track as every leg, reused with a different feel: offset/length pick a
+  // phrase within the proven-good first 20s, playbackRate (pitch+tempo together, like a
+  // turntable) is the main differentiator — the coastal time-attack leg runs hottest and most
+  // urgent
+  bgm: { offset: 2, length: 18, rate: 1.08, volume: 0.32 },
   segments: [
     { type: 'flat', len: 38, surface: 'tarmac' },        // start pad / run-up (extended)
     { type: 'rollers', len: 58, surface: 'gravel', amp: 0.7 },   // extended
@@ -82,6 +87,9 @@ export const LEG_PUNE = {
   timeLimit: 64,          // generous vs. Creeks' 26s — this is the learn-the-controls leg
   medal: { gold: 31, silver: 38 },
   fog: { start: 110, end: 480 },   // dry, open plateau — long sightlines, not misty
+  // the baseline mix of the shared synthwave track — bright, straightforward, at the track's
+  // own natural pitch/tempo, matching a dry open tutorial run
+  bgm: { offset: 0, length: 20, rate: 1.0, volume: 0.30 },
   // same near-zero saturation as the default (Creeks) palette — a hairline warm bias and a
   // brighter value curve read as "dry, sun-bleached plateau" without introducing real color
   palette: {
@@ -125,6 +133,10 @@ export const LEG_GHATS = {
   timeLimit: 38,
   medal: { gold: 44, silver: 52 },
   fog: { start: 42, end: 220 },    // dense, close mist — the whole point of the leg
+  // same track, pitched down and slowed (a lower playbackRate shifts both together, like a
+  // turntable) — heavier and more ominous, matching the misty climb; volume ducked slightly
+  // to sit further back in the mix
+  bgm: { offset: 0, length: 20, rate: 0.90, volume: 0.25 },
   // same near-zero saturation as every other leg (no real hue, ever) — a deeper, cooler bias
   // and lower value than Creeks/Pune reads as "shaded, damp, closed-in forest" through
   // brightness alone, same spread (~10-14 RGB points) as the rest of the palette family
@@ -163,6 +175,9 @@ export const LEG_VALLEY = {
   timeLimit: 32,
   medal: { gold: 37, silver: 44 },
   fog: { start: 70, end: 260 },   // humid valley floor — hazier than Pune, less choking than the Ghats' mist
+  // a slightly later phrase, barely slowed — dreamier and warmer than Pune's baseline, matching
+  // the lush valley/backwaters without going as dark as the Ghats' mix
+  bgm: { offset: 4, length: 16, rate: 0.96, volume: 0.30 },
   // near-zero saturation, same family as every other leg — a hairline GREEN bias (G channel a
   // touch above R/B, still only a few points of spread) reads as "lush jungle valley" through
   // value and density of foliage props, never through real hue/saturation

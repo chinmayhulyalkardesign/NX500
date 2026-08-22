@@ -169,7 +169,14 @@ function doSplash(x, y) { splash.emitter.copyFromFloats(x, y + 0.15, 0); splash.
 // user gesture that unlocks audio, rather than racing an arbitrary early keydown/tap against
 // the AudioContext unlocking.
 const engineLoopSound = new Sound('engineLoop', '/audio/engine-loop.mp3', scene, null, { loop: true, autoplay: false, volume: 0.25 });
-const bgmSound = new Sound('bgm', '/audio/bgm.mp3', scene, null, { loop: false, autoplay: false, volume: 0.3 });
+// per-leg mix: same shared synthwave track by default (src can point at a leg-specific file
+// instead, once one exists — everything else here still applies), offset/length pick a phrase
+// to loop, playbackRate (pitch+tempo together) and volume give each leg a distinct feel
+const bgmConf = { src: '/audio/bgm.mp3', offset: 0, length: 20, rate: 1.0, volume: 0.3, ...CURRENT_LEG.bgm };
+const bgmSound = new Sound('bgm', bgmConf.src, scene, null, {
+  loop: true, autoplay: false, volume: bgmConf.volume,
+  offset: bgmConf.offset, length: bgmConf.length, playbackRate: bgmConf.rate,
+});
 if (Engine.audioEngine) Engine.audioEngine.useCustomUnlockedButton = true;
 function updateAudio(v, grounded, active) {
   // wait for playback to actually start: scheduling a volume change before then can collide
@@ -184,7 +191,7 @@ function updateAudio(v, grounded, active) {
     engineLoopSound.setVolume(active ? vol : 0);
   }
   if (bgmSound.isReady() && bgmSound.isPlaying) {
-    bgmSound.setVolume(active ? 0.3 : 0);
+    bgmSound.setVolume(active ? bgmConf.volume : 0);
   }
 }
 
