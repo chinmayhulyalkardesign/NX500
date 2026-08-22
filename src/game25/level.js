@@ -160,8 +160,8 @@ export const LEG_VALLEY = {
   id: 'valley',
   name: 'MULSHI VALLEY',
   subtitle: 'KONKAN FOOTHILLS · TIME ATTACK',
-  timeLimit: 30,
-  medal: { gold: 35, silver: 42 },
+  timeLimit: 32,
+  medal: { gold: 37, silver: 44 },
   fog: { start: 70, end: 260 },   // humid valley floor — hazier than Pune, less choking than the Ghats' mist
   // near-zero saturation, same family as every other leg — a hairline GREEN bias (G channel a
   // touch above R/B, still only a few points of spread) reads as "lush jungle valley" through
@@ -182,8 +182,10 @@ export const LEG_VALLEY = {
     { type: 'flat', len: 40, surface: 'mud' },              // the control test continues — a long straight that never lets grip return
     { type: 'checkpoint', bonus: 6 },
     { type: 'ford', len: 18, dip: 0.4 },                    // a backwater channel — wide and slow, not a rushing creek
-    { type: 'flat', len: 32, surface: 'gravel' },           // regroup on the far bank
-    { type: 'bridge', len: 20 },                            // a wooden bridge over a tributary stream — first use in the game
+    { type: 'flat', len: 32, surface: 'gravel' },           // regroup on the far bank — then the ground falls away
+    { type: 'bridge', len: 12, gorge: 6.2 },                // first span — the deck stays level while a real gorge opens up beneath it
+    { type: 'gap', len: 14, pit: 6.2 },                     // the bridge's missing middle — the deepest jump in the game, straight into the gorge
+    { type: 'bridge', len: 12, gorge: 6.2 },                // second span, back onto solid decking
     { type: 'flat', len: 28, surface: 'gravel' },
     { type: 'checkpoint', bonus: 6 },
     { type: 'climb', len: 14, surface: 'gravel', rise: 2.0 },     // short climb back out of the valley — a breather, no mud left
@@ -212,7 +214,7 @@ function computeLevel(leg) {
     else if (s.type === 'climb') { const r = s.rise; for (let i = 0; i < n; i++) emit(baseY + r * smooth(i / n), surf); baseY += r; }
     else if (s.type === 'descent') { const r = -(s.drop ?? 3); for (let i = 0; i < n; i++) emit(baseY + r * smooth(i / n), surf); baseY += r; }
     else if (s.type === 'ramp') { const r = s.rise ?? 2; for (let i = 0; i < n; i++) { const t = i / n; emit(baseY + r * t * t, surf); } baseY += r; }
-    else if (s.type === 'bridge') { const x0 = x; for (let i = 0; i < n; i++) emit(baseY, 'wood'); marks.bridges.push({ x0, x1: x, y: baseY }); }
+    else if (s.type === 'bridge') { const x0 = x; for (let i = 0; i < n; i++) emit(baseY, 'wood'); marks.bridges.push({ x0, x1: x, y: baseY, gorge: s.gorge ?? 0 }); }
     else if (s.type === 'ford') {
       const x0 = x, dip = s.dip ?? 0.4;
       for (let i = 0; i < n; i++) { const t = i / n; emit(baseY - dip * Math.sin(Math.PI * t), 'water'); }
@@ -265,7 +267,7 @@ function smoothstep(x, a, b) { const t = Math.min(1, Math.max(0, (x - a) / (b - 
 
 export function buildLevel(scene, shadows, leg) {
   const L = computeLevel(leg);
-  const { startX, finishX, profile, surfaceAt, waterZones, checkpoints, marks, minY } = L;
+  const { startX, finishX, profile, surfaceAt, waterAt, waterZones, checkpoints, marks, minY } = L;
   // the parallax backdrop (hills/treeline) sits at a fixed datum height; if the track dips well
   // below 0 (a valley leg), shift the whole backdrop down with it so the camera — which follows
   // the track's real elevation — never opens a gap between the near ground and the far hills
@@ -285,12 +287,28 @@ export function buildLevel(scene, shadows, leg) {
   // ---------- ribbon (surfaced, value-shaded) ----------
   const spanX = finishX - startX + 400;   // generous aprons (200m each side): ground runs well past the finish for the outro ride-off
   const midX = (startX + finishX) / 2;
+  // a bridge with `gorge` reads as spanning a real valley: the ground beneath the deck (which
+  // itself stays level — the ride path never changes) drops away, easing toward 0 at whichever
+  // end meets solid ground and toward the flanking gap's own pit depth at the end that meets a
+  // jump, so a bridge + gap + bridge crossing carves out one continuous valley for the ribbon
+  const gorgeDepthAt = (wx) => {
+    for (const b of marks.bridges) {
+      if (!b.gorge || wx < b.x0 || wx > b.x1) continue;
+      const wz0 = waterAt(b.x0 - 0.6), wz1 = waterAt(b.x1 + 0.6);
+      const dStart = wz0 && wz0.type === 'gap' ? b.y - wz0.waterY : 0;
+      const dEnd = wz1 && wz1.type === 'gap' ? b.y - wz1.waterY : 0;
+      const span = b.x1 - b.x0;
+      const t = span > 0 ? (wx - b.x0) / span : 0;
+      return b.y - (dStart * (1 - t) + dEnd * t);
+    }
+    return null;
+  };
   const ribbon = MeshBuilder.CreateGround('ribbon', {
     width: spanX, height: 64, subdivisionsX: Math.round(spanX / 0.6), subdivisionsY: 8, updatable: true,
   }, scene);
   ribbon.position.x = midX;
   const pos = ribbon.getVerticesData(VertexBuffer.PositionKind);
-  for (let i = 0; i < pos.length; i += 3) pos[i + 1] = profile(pos[i] + midX);
+  for (let i = 0; i < pos.length; i += 3) { const wx = pos[i] + midX; const gd = gorgeDepthAt(wx); pos[i + 1] = gd !== null ? gd : profile(wx); }
   ribbon.updateVerticesData(VertexBuffer.PositionKind, pos);
   ribbon.convertToFlatShadedMesh();
   const p = ribbon.getVerticesData(VertexBuffer.PositionKind);
