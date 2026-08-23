@@ -213,6 +213,44 @@ export const LEG_VALLEY = {
   ],
 };
 
+// ---------- off the tableland toward the coast (Kaas) ----------
+export const LEG_KAAS = {
+  id: 'kaas',
+  name: 'KAAS PLATEAU',
+  subtitle: 'THE LONG DESCENT · TIME ATTACK',
+  timeLimit: 32,
+  medal: { gold: 36, silver: 43 },
+  fog: { start: 90, end: 320 },   // open tableland sightlines up top, hazier once you're off it
+  // the strongest warm bias of any leg yet (still the same ~12-14 RGB point spread as every
+  // other palette — never real hue) reads as sun-baked laterite rock rather than Pune's lighter
+  // tan or Valley's cool green
+  palette: {
+    ground: '#d6cdc8', rock: '#ccc3be',
+    hill: ['#c7beb9', '#d6cdc8', '#e5dcd7'],
+    tree: '#b8afaa', pole: '#d1c8c3', fg: '#bdb4af', wood: '#c5bcb7',
+  },
+  props: { palms: true, boats: false, turbines: false, poles: true, grove: 0.4, rocks: true, foreground: true, waterfalls: false },
+  bgm: { src: '/audio/bgm-kaas.mp3', rate: 1.0, volume: 0.31 },
+  segments: [
+    { type: 'flat', len: 44, surface: 'tarmac' },          // open tableland — fast, exposed, long sightlines
+    { type: 'flat', len: 40, surface: 'broken' },          // chattery laterite rock (broken's own bump), minor speed bleed —
+                                                            // flat, not rollers, since a checkpoint follows right after
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'climb', len: 14, surface: 'broken', rise: 1.5 },    // the true edge of the plateau — sets up the crest
+    { type: 'descent', len: 16, surface: 'broken', drop: 7.0 },  // THE big launch — off the tableland's edge
+    { type: 'flat', len: 60, surface: 'broken' },          // landing zone + recovery, well clear of the next gate
+    { type: 'descent', len: 24, surface: 'broken', drop: 3.0 },  // the descent continues, gentler — no second launch
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'flat', len: 30, surface: 'sand' },            // dusty foot of the plateau — drag, redder soil
+    { type: 'rollers', len: 44, surface: 'sand', amp: 0.5 },
+    { type: 'flat', len: 34, surface: 'gravel' },          // firming up — first palms, foreshadowing the coast
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'climb', len: 14, surface: 'gravel', rise: 2.0 },    // a small counter-rise before the sprint
+    { type: 'flat', len: 60, surface: 'tarmac' },          // the road firms back to tarmac — sprint to the line
+    { type: 'finish' },
+  ],
+};
+
 const DX = 0.5;
 function smooth(t) { return t * t * (3 - 2 * t); }
 
