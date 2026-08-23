@@ -58,9 +58,15 @@ export const LEG_CREEKS = {
     { type: 'climb', len: 20, surface: 'gravel', rise: 2.4 },
     { type: 'descent', len: 20, surface: 'gravel', drop: 3.4 },   // down to the creek
     { type: 'ford', len: 15, dip: 0.5 },                 // shallow creek — carry momentum to climb out
-    { type: 'checkpoint', bonus: 3 },
-    { type: 'climb', len: 24, surface: 'gravel', rise: 3.8 },     // the climb-out (the momentum puzzle)
-    { type: 'flat', len: 28, surface: 'tarmac' },        // extended
+    { type: 'climb', len: 24, surface: 'gravel', rise: 3.8 },     // the climb-out (the momentum puzzle) —
+                                                                   // a fast entry off the descent above can launch clean over
+                                                                   // the old checkpoint spot and land right at the base of this
+                                                                   // climb, so the gate now sits well past it instead
+    { type: 'flat', len: 10, surface: 'tarmac' },        // clears the descent's high-speed landing zone before the gate
+    { type: 'checkpoint', bonus: 3 },                    // rewards clearing the ford AND the climb-out together —
+                                                          // 34m past the landing zone (verified with the real physics,
+                                                          // not just the discontinuity heuristic, at a 30 m/s entry)
+    { type: 'flat', len: 18, surface: 'tarmac' },
     { type: 'rollers', len: 44, surface: 'sand', amp: 0.6 },      // beach sand — drag (extended)
     { type: 'flat', len: 30, surface: 'gravel' },                 // gravel run-up (extended, flat lip — no ramp)
     { type: 'gap', len: 12, pit: 3.4 },                  // THE gap — smaller & more forgiving; Space-jump at the red line
@@ -203,6 +209,44 @@ export const LEG_VALLEY = {
     { type: 'checkpoint', bonus: 6 },
     { type: 'climb', len: 14, surface: 'gravel', rise: 2.0 },     // short climb back out of the valley — a breather, no mud left
     { type: 'flat', len: 60, surface: 'tarmac' },           // the road firms back to tarmac — sprint to the line
+    { type: 'finish' },
+  ],
+};
+
+// ---------- off the tableland toward the coast (Kaas) ----------
+export const LEG_KAAS = {
+  id: 'kaas',
+  name: 'KAAS PLATEAU',
+  subtitle: 'THE LONG DESCENT · TIME ATTACK',
+  timeLimit: 32,
+  medal: { gold: 36, silver: 43 },
+  fog: { start: 90, end: 320 },   // open tableland sightlines up top, hazier once you're off it
+  // the strongest warm bias of any leg yet (still the same ~12-14 RGB point spread as every
+  // other palette — never real hue) reads as sun-baked laterite rock rather than Pune's lighter
+  // tan or Valley's cool green
+  palette: {
+    ground: '#d6cdc8', rock: '#ccc3be',
+    hill: ['#c7beb9', '#d6cdc8', '#e5dcd7'],
+    tree: '#b8afaa', pole: '#d1c8c3', fg: '#bdb4af', wood: '#c5bcb7',
+  },
+  props: { palms: true, boats: false, turbines: false, poles: true, grove: 0.4, rocks: true, foreground: true, waterfalls: false },
+  bgm: { src: '/audio/bgm-kaas.mp3', rate: 1.0, volume: 0.31 },
+  segments: [
+    { type: 'flat', len: 44, surface: 'tarmac' },          // open tableland — fast, exposed, long sightlines
+    { type: 'flat', len: 40, surface: 'broken' },          // chattery laterite rock (broken's own bump), minor speed bleed —
+                                                            // flat, not rollers, since a checkpoint follows right after
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'climb', len: 14, surface: 'broken', rise: 1.5 },    // the true edge of the plateau — sets up the crest
+    { type: 'descent', len: 16, surface: 'broken', drop: 7.0 },  // THE big launch — off the tableland's edge
+    { type: 'flat', len: 60, surface: 'broken' },          // landing zone + recovery, well clear of the next gate
+    { type: 'descent', len: 24, surface: 'broken', drop: 3.0 },  // the descent continues, gentler — no second launch
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'flat', len: 30, surface: 'sand' },            // dusty foot of the plateau — drag, redder soil
+    { type: 'rollers', len: 44, surface: 'sand', amp: 0.5 },
+    { type: 'flat', len: 34, surface: 'gravel' },          // firming up — first palms, foreshadowing the coast
+    { type: 'checkpoint', bonus: 5 },
+    { type: 'climb', len: 14, surface: 'gravel', rise: 2.0 },    // a small counter-rise before the sprint
+    { type: 'flat', len: 60, surface: 'tarmac' },          // the road firms back to tarmac — sprint to the line
     { type: 'finish' },
   ],
 };
