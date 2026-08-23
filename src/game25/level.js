@@ -58,9 +58,15 @@ export const LEG_CREEKS = {
     { type: 'climb', len: 20, surface: 'gravel', rise: 2.4 },
     { type: 'descent', len: 20, surface: 'gravel', drop: 3.4 },   // down to the creek
     { type: 'ford', len: 15, dip: 0.5 },                 // shallow creek — carry momentum to climb out
-    { type: 'checkpoint', bonus: 3 },
-    { type: 'climb', len: 24, surface: 'gravel', rise: 3.8 },     // the climb-out (the momentum puzzle)
-    { type: 'flat', len: 28, surface: 'tarmac' },        // extended
+    { type: 'climb', len: 24, surface: 'gravel', rise: 3.8 },     // the climb-out (the momentum puzzle) —
+                                                                   // a fast entry off the descent above can launch clean over
+                                                                   // the old checkpoint spot and land right at the base of this
+                                                                   // climb, so the gate now sits well past it instead
+    { type: 'flat', len: 10, surface: 'tarmac' },        // clears the descent's high-speed landing zone before the gate
+    { type: 'checkpoint', bonus: 3 },                    // rewards clearing the ford AND the climb-out together —
+                                                          // 34m past the landing zone (verified with the real physics,
+                                                          // not just the discontinuity heuristic, at a 30 m/s entry)
+    { type: 'flat', len: 18, surface: 'tarmac' },
     { type: 'rollers', len: 44, surface: 'sand', amp: 0.6 },      // beach sand — drag (extended)
     { type: 'flat', len: 30, surface: 'gravel' },                 // gravel run-up (extended, flat lip — no ramp)
     { type: 'gap', len: 12, pit: 3.4 },                  // THE gap — smaller & more forgiving; Space-jump at the red line
