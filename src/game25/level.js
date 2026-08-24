@@ -176,8 +176,8 @@ export const LEG_VALLEY = {
   id: 'valley',
   name: 'MULSHI VALLEY',
   subtitle: 'KONKAN FOOTHILLS · TIME ATTACK',
-  timeLimit: 32,
-  medal: { gold: 37, silver: 44 },
+  timeLimit: 36,
+  medal: { gold: 41, silver: 49 },
   fog: { start: 70, end: 260 },   // humid valley floor — hazier than Pune, less choking than the Ghats' mist
   // its own clip cut from the track's sustained warm mid-section (32-48s of the source) —
   // steady and flowing rather than pulsing (Pune) or brooding (Ghats), matching the lush valley
@@ -194,7 +194,10 @@ export const LEG_VALLEY = {
   segments: [
     { type: 'flat', len: 36, surface: 'tarmac' },          // carrying speed down off the ghat's summit
     { type: 'descent', len: 20, surface: 'gravel', drop: 3.0 },   // dropping into the valley
-    { type: 'flat', len: 22, surface: 'gravel' },          // buffer — absorbs the descent before the gate
+    { type: 'flat', len: 62, surface: 'gravel' },          // buffer — absorbs the descent before the gate; sized against
+                                                            // a real top-speed (34 m/s, gravel's actual cap) physics trace,
+                                                            // not just the discontinuity heuristic that originally cleared
+                                                            // this at 22m — that heuristic underestimated the real launch
     { type: 'checkpoint', bonus: 6 },
     { type: 'rollers', len: 54, surface: 'mud', amp: 0.4 },       // first taste of mud — sustained low-grip chatter, not a single wet pitch
     { type: 'climb', len: 18, surface: 'mud', rise: 2.2 },        // mud climb — grip 0.42 bites far harder than the Ghats' wet_tarmac ever did
@@ -249,6 +252,39 @@ export const LEG_KAAS = {
     { type: 'flat', len: 60, surface: 'tarmac' },          // the road firms back to tarmac — sprint to the line
     { type: 'finish' },
   ],
+};
+
+// ---------- the full run: every leg back to back, one continuous time attack ----------
+// pure concatenation — each leg's own segments (minus its trailing finish, replaced with a
+// checkpoint) feed straight into the next. Every leg happens to end on a flat segment right
+// before its finish line, and flat carries zero discontinuity risk regardless of what follows,
+// so each leg's own internal checkpoint-safety work (verified with the real physics elsewhere
+// in this file's history) carries over through the seams without needing new terrain.
+function chainLegs(...legs) {
+  const segments = [];
+  legs.forEach((leg, i) => {
+    const last = leg.segments[leg.segments.length - 1];
+    segments.push(...(last.type === 'finish' ? leg.segments.slice(0, -1) : leg.segments));
+    if (i < legs.length - 1) segments.push({ type: 'checkpoint', bonus: 5 });
+  });
+  segments.push({ type: 'finish' });
+  return segments;
+}
+
+export const LEG_FULL = {
+  id: 'full',
+  name: 'FULL RUN',
+  subtitle: 'PUNE TO KAAS · THE COMPLETE RUN',
+  timeLimit: 109,          // tight: budget (timeLimit + every checkpoint bonus) clears gold by
+                            // ~22% and silver by only ~6% — a careless run risks timing out
+  medal: { gold: 152, silver: 174 },   // gold = the sum of all four legs' own gold times — true
+                                        // back-to-back perfect play, not a discount
+  fog: { start: 90, end: 340 },
+  // no palette override — the plain, unbiased Superhot default (no hue, no per-leg tint) stands
+  // in for the whole journey, rather than picking one leg's mood to represent all four
+  props: { palms: true, boats: true, turbines: true, poles: true, grove: 2.0, rocks: true, foreground: true, waterfalls: true },   // the union of every leg's own props — nothing (Ghats' waterfalls, Valley's boats, ...) silently disappears
+  bgm: { src: '/audio/bgm-full.mp3', rate: 1.0, volume: 0.30 },   // the whole uploaded track, looping — its own ~137s length roughly matches the run itself
+  segments: chainLegs(LEG_PUNE, LEG_GHATS, LEG_VALLEY, LEG_KAAS),
 };
 
 const DX = 0.5;
