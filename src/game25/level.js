@@ -275,8 +275,11 @@ export const LEG_FULL = {
   id: 'full',
   name: 'FULL RUN',
   subtitle: 'PUNE TO KAAS · THE COMPLETE RUN',
-  timeLimit: 109,          // tight: budget (timeLimit + every checkpoint bonus) clears gold by
-                            // ~22% and silver by only ~6% — a careless run risks timing out
+  timeLimit: 84,           // brutal on purpose: medals don't gate finishing, the countdown does —
+                            // budget (timeLimit + every checkpoint bonus = 160s) clears gold pace
+                            // (152s) by only ~5% and doesn't clear silver pace (174s) at all, so
+                            // surviving to the finish itself demands close to gold-tier pace on
+                            // every leg, not just a medal-quality run
   medal: { gold: 152, silver: 174 },   // gold = the sum of all four legs' own gold times — true
                                         // back-to-back perfect play, not a discount
   fog: { start: 90, end: 340 },
