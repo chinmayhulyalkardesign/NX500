@@ -286,7 +286,7 @@ export const LEG_FULL = {
   // no palette override — the plain, unbiased Superhot default (no hue, no per-leg tint) stands
   // in for the whole journey, rather than picking one leg's mood to represent all four
   props: { palms: true, boats: true, turbines: true, poles: true, grove: 2.0, rocks: true, foreground: true, waterfalls: true },   // the union of every leg's own props — nothing (Ghats' waterfalls, Valley's boats, ...) silently disappears
-  bgm: { src: '/audio/bgm-full.mp3', rate: 1.0, volume: 0.30 },   // the whole uploaded track, looping — its own ~137s length roughly matches the run itself
+  bgm: { src: '/audio/bgm-full.mp3', rate: 1.0, volume: 0.30 },   // a dedicated track (196s — longer than the run itself, so it rarely even needs to loop), fade baked in for a clean loop point on runs that do outlast it
   segments: chainLegs(LEG_PUNE, LEG_GHATS, LEG_VALLEY, LEG_KAAS),
 };
 
