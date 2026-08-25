@@ -22,6 +22,17 @@
         color: #ff2e2e; cursor: pointer;
       }
       #startBtn:hover { background: rgba(255, 46, 46, 0.12); }
+      #fullRunBtn {
+        display: none; margin-top: 22px; font-family: monospace; font-size: 13px; font-weight: 700;
+        letter-spacing: 0.18em; padding: 11px 32px; background: #ff2e2e; border: 2px solid #ff2e2e;
+        color: #0a0a0a; cursor: pointer;
+      }
+      #fullRunBtn:hover { background: #ff5252; border-color: #ff5252; }
+      #modeDivider {
+        display: none; align-items: center; gap: 14px; margin-top: 26px; width: 260px;
+      }
+      #modeDivider .line { flex: 1; height: 1px; background: #333; }
+      #modeDivider .label { font-family: monospace; font-size: 10px; letter-spacing: 0.25em; color: #55575a; }
       #legPicker { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; justify-content: center; }
       #legPicker .legBtn {
         font-family: monospace; font-size: 11px; letter-spacing: 0.16em; padding: 9px 16px;
@@ -75,10 +86,11 @@
         <a class="legBtn" data-leg="valley" href="?leg=valley">03 · MULSHI VALLEY</a>
         <a class="legBtn" data-leg="kaas" href="?leg=kaas">04 · KAAS PLATEAU</a>
         <a class="legBtn" data-leg="creeks" href="?leg=creeks">06 · CREEKS &amp; BACKWATERS</a>
-        <a class="legBtn" data-leg="full" href="?leg=full">★ FULL RUN</a>
       </div>
       <div id="startLoading">LOADING…</div>
       <button id="startBtn">START</button>
+      <div id="modeDivider"><span class="line"></span><span class="label">OR</span><span class="line"></span></div>
+      <button id="fullRunBtn">★ TAKE A FULL RUN</button>
     </div>
     <div class="hud" id="time">0:00.0</div>
     <div class="hud" id="dist"></div>
