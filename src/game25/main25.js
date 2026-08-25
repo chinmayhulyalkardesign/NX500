@@ -27,6 +27,7 @@ document.querySelectorAll('#legPicker .legBtn').forEach((el) => {
 function goToLegSelect() {
   const params = new URLSearchParams(location.search);
   params.delete('leg');
+  params.delete('auto');   // don't carry the Full Run shortcut's auto-start flag back to the picker
   const qs = params.toString();
   location.href = qs ? `?${qs}` : location.pathname;
 }
@@ -648,19 +649,37 @@ function frame(dt) {
   scene.render();
 }
 // gate the opening state behind the Start screen instead of auto-arming on load: reveal the
-// button now that everything above is ready, and defer resetMission() to its click handler
+// buttons now that everything above is ready, and defer resetMission() to a click (or the
+// Full Run shortcut's auto-start below)
 const startScreen = document.getElementById('startScreen');
 const startLoadingEl = document.getElementById('startLoading');
 const startBtn = document.getElementById('startBtn');
+const fullRunBtn = document.getElementById('fullRunBtn');
+const modeDividerEl = document.getElementById('modeDivider');
 if (startLoadingEl) startLoadingEl.style.display = 'none';
 if (startBtn) startBtn.style.display = 'inline-block';
-startBtn?.addEventListener('click', () => {
+if (modeDividerEl) modeDividerEl.style.display = 'flex';
+if (fullRunBtn) fullRunBtn.style.display = 'inline-block';
+function beginRace() {
   if (startScreen) startScreen.style.display = 'none';
   resetMission();       // now that camPos / renderX / acc are declared, arm the opening state (also starts engineLoop + bgm)
   // the physics/render loop reads mission state (checkpoints, elapsed, etc.) that only
   // exists after resetMission() runs, so it doesn't start until here
   engine.runRenderLoop(() => frame(Math.min(engine.getDeltaTime() / 1000, 0.05)));
+}
+startBtn?.addEventListener('click', beginRace, { once: true });
+// Full Run is a direct-start shortcut from ANY leg's start screen: if this page is already
+// the Full Run (arrived via the shortcut below, or a direct ?leg=full link), clicking it
+// starts immediately, same as START; otherwise it reloads onto ?leg=full&auto=1, and the
+// auto=1 flag below fires beginRace() the instant that reloaded page is ready — no second click
+fullRunBtn?.addEventListener('click', () => {
+  if (CURRENT_LEG_ID === 'full') { beginRace(); return; }
+  const params = new URLSearchParams(location.search);
+  params.set('leg', 'full');
+  params.set('auto', '1');
+  location.href = `?${params.toString()}`;
 }, { once: true });
+if (CURRENT_LEG_ID === 'full' && new URLSearchParams(location.search).get('auto') === '1') beginRace();
 window.addEventListener('resize', () => engine.resize());
 
 // ---------- speed lines ----------
